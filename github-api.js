@@ -8,8 +8,8 @@
 class GitHubManager {
     constructor() {
         this.apiBaseUrl = 'https://api.github.com';
-        this.repoOwner = '';
-        this.repoName = '';
+        this.repoOwner = 'ambeidetic';
+        this.repoName = 'killphilosophy';
         this.token = null;
         this.isAuthenticated = false;
         this.branchName = 'main';
