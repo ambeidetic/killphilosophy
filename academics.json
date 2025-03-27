@@ -1,1 +1,266 @@
-
+{
+  "Jacques Derrida": {
+    "name": "Jacques Derrida",
+    "bio": "Jacques Derrida (1930-2004) was a French philosopher known for developing deconstruction, a method of critical analysis that examines the relationship between text and meaning. His work has had a significant impact on literary theory, philosophy, and various other disciplines. Derrida is often associated with post-structuralism and is considered one of the most influential philosophers of the 20th century.",
+    "taxonomies": {
+      "discipline": ["Philosophy", "Literary Theory"],
+      "tradition": ["Post-structuralism"],
+      "era": ["20th Century"],
+      "methodology": ["Deconstruction"],
+      "theme": ["Language", "Identity", "Ethics"]
+    },
+    "papers": [
+      { "title": "Of Grammatology", "year": 1967, "coauthors": [] },
+      { "title": "Writing and Difference", "year": 1967, "coauthors": [] },
+      { "title": "Speech and Phenomena", "year": 1967, "coauthors": [] },
+      { "title": "Margins of Philosophy", "year": 1972, "coauthors": [] },
+      { "title": "Positions", "year": 1972, "coauthors": [] }
+    ],
+    "events": [
+      { "title": "Johns Hopkins Conference", "year": 1966, "location": "Baltimore, USA" },
+      { "title": "Professor at École Normale Supérieure", "year": 1965, "location": "Paris, France" },
+      { "title": "Visiting Professor at Yale", "year": 1975, "location": "New Haven, USA" }
+    ],
+    "connections": ["Michel Foucault", "Gilles Deleuze", "Emmanuel Levinas", "Jean-François Lyotard", "Judith Butler"]
+  },
+  "Michel Foucault": {
+    "name": "Michel Foucault",
+    "bio": "Michel Foucault (1926-1984) was a French philosopher, historian of ideas, and social theorist whose theories addressed the relationship between power and knowledge and how they are used as a form of social control through societal institutions. He is best known for his critical studies of social institutions, especially psychiatry, medicine, the prison system, and for his work on the history of sexuality.",
+    "taxonomies": {
+      "discipline": ["Philosophy", "History", "Sociology"],
+      "tradition": ["Post-structuralism"],
+      "era": ["20th Century"],
+      "methodology": ["Genealogy", "Discourse Analysis"],
+      "theme": ["Power", "Knowledge", "Sexuality"]
+    },
+    "papers": [
+      { "title": "The Order of Things", "year": 1966, "coauthors": [] },
+      { "title": "The Archaeology of Knowledge", "year": 1969, "coauthors": [] },
+      { "title": "Discipline and Punish", "year": 1975, "coauthors": [] },
+      { "title": "The History of Sexuality", "year": 1976, "coauthors": [] },
+      { "title": "The Birth of the Clinic", "year": 1963, "coauthors": [] }
+    ],
+    "events": [
+      { "title": "Collège de France Lectures", "year": 1970, "location": "Paris, France" },
+      { "title": "Professor at University of Clermont-Ferrand", "year": 1960, "location": "Clermont-Ferrand, France" },
+      { "title": "Visiting Professor at UC Berkeley", "year": 1975, "location": "Berkeley, USA" }
+    ],
+    "connections": ["Jacques Derrida", "Gilles Deleuze", "Georges Canguilhem", "Jean-Paul Sartre", "Pierre Bourdieu"]
+  },
+  "Judith Butler": {
+    "name": "Judith Butler",
+    "bio": "Judith Butler (born 1956) is an American philosopher and gender theorist whose work has influenced political philosophy, ethics, and feminist, queer, and literary theory. Butler is best known for their theory of gender performativity, which they introduced in their influential 1990 book 'Gender Trouble'. Their work has had wide-ranging influence on fields including critical theory, cultural studies, and feminist theory.",
+    "taxonomies": {
+      "discipline": ["Philosophy", "Gender Studies"],
+      "tradition": ["Post-structuralism", "Critical Theory"],
+      "era": ["Contemporary", "20th Century", "21st Century"],
+      "methodology": ["Textual Analysis", "Genealogy"],
+      "theme": ["Gender", "Identity", "Ethics"]
+    },
+    "papers": [
+      { "title": "Gender Trouble", "year": 1990, "coauthors": [] },
+      { "title": "Bodies That Matter", "year": 1993, "coauthors": [] },
+      { "title": "Precarious Life", "year": 2004, "coauthors": [] },
+      { "title": "Excitable Speech", "year": 1997, "coauthors": [] },
+      { "title": "Notes Toward a Performative Theory of Assembly", "year": 2015, "coauthors": [] }
+    ],
+    "events": [
+      { "title": "Berkeley Faculty", "year": 1993, "location": "Berkeley, USA" },
+      { "title": "Adorno Prize", "year": 2012, "location": "Frankfurt, Germany" },
+      { "title": "Professor at European Graduate School", "year": 2007, "location": "Saas-Fee, Switzerland" }
+    ],
+    "connections": ["Michel Foucault", "Jacques Derrida", "Slavoj Žižek", "Donna Haraway", "Sara Ahmed"]
+  },
+  "Gilles Deleuze": {
+    "name": "Gilles Deleuze",
+    "bio": "Gilles Deleuze (1925-1995) was a French philosopher who wrote on philosophy, literature, film, and fine art. His most popular works were the two volumes of Capitalism and Schizophrenia: Anti-Oedipus and A Thousand Plateaus, both co-written with psychoanalyst Félix Guattari. His work has been influential in diverse fields including philosophy, literary theory, film studies, and art.",
+    "taxonomies": {
+      "discipline": ["Philosophy", "Literary Theory"],
+      "tradition": ["Post-structuralism"],
+      "era": ["20th Century"],
+      "methodology": ["Textual Analysis"],
+      "theme": ["Desire", "Difference", "Immanence"]
+    },
+    "papers": [
+      { "title": "Difference and Repetition", "year": 1968, "coauthors": [] },
+      { "title": "The Logic of Sense", "year": 1969, "coauthors": [] },
+      { "title": "Anti-Oedipus", "year": 1972, "coauthors": ["Félix Guattari"] },
+      { "title": "A Thousand Plateaus", "year": 1980, "coauthors": ["Félix Guattari"] },
+      { "title": "Cinema 1: The Movement-Image", "year": 1983, "coauthors": [] }
+    ],
+    "events": [
+      { "title": "Professor at University of Paris VIII", "year": 1969, "location": "Paris, France" },
+      { "title": "Professor at Lycée Louis Thuillier", "year": 1948, "location": "Amiens, France" },
+      { "title": "Collaboration with Guattari", "year": 1969, "location": "Paris, France" }
+    ],
+    "connections": ["Félix Guattari", "Michel Foucault", "Jacques Derrida", "Jean-François Lyotard", "Henri Bergson"]
+  },
+  "Slavoj Žižek": {
+    "name": "Slavoj Žižek",
+    "bio": "Slavoj Žižek (born 1949) is a Slovenian philosopher and cultural critic. He is a professor at the Institute for Sociology and Philosophy at the University of Ljubljana and international director of the Birkbeck Institute for the Humanities of the University of London. His works draw from continental philosophy, political theory, cultural studies, psychoanalysis, film criticism, and theology.",
+    "taxonomies": {
+      "discipline": ["Philosophy", "Political Science", "Psychology"],
+      "tradition": ["Critical Theory", "Marxism"],
+      "era": ["Contemporary", "21st Century"],
+      "methodology": ["Dialectical Method", "Textual Analysis"],
+      "theme": ["Ideology", "Capitalism", "Consciousness"]
+    },
+    "papers": [
+      { "title": "The Sublime Object of Ideology", "year": 1989, "coauthors": [] },
+      { "title": "Looking Awry", "year": 1991, "coauthors": [] },
+      { "title": "The Plague of Fantasies", "year": 1997, "coauthors": [] },
+      { "title": "Less Than Nothing", "year": 2012, "coauthors": [] },
+      { "title": "Pandemic! COVID-19 Shakes the World", "year": 2020, "coauthors": [] }
+    ],
+    "events": [
+      { "title": "Co-director of Birkbeck Institute for the Humanities", "year": 2010, "location": "London, UK" },
+      { "title": "Visiting Professor at New York University", "year": 2005, "location": "New York, USA" },
+      { "title": "Occupy Wall Street Address", "year": 2011, "location": "New York, USA" }
+    ],
+    "connections": ["Judith Butler", "Alain Badiou", "Jacques Lacan", "Fredric Jameson", "Jürgen Habermas"]
+  },
+  "Walter Benjamin": {
+    "name": "Walter Benjamin",
+    "bio": "Walter Benjamin (1892-1940) was a German Jewish philosopher, cultural critic and essayist. An eclectic thinker, combining elements of German idealism, Romanticism, Western Marxism, and Jewish mysticism, Benjamin made enduring and influential contributions to aesthetic theory, literary criticism, and historical materialism. His work is associated with the Frankfurt School.",
+    "taxonomies": {
+      "discipline": ["Philosophy", "Literary Theory", "History"],
+      "tradition": ["Critical Theory", "Marxism"],
+      "era": ["20th Century"],
+      "methodology": ["Dialectical Method", "Textual Analysis"],
+      "theme": ["Art", "Technology", "History"]
+    },
+    "papers": [
+      { "title": "The Work of Art in the Age of Mechanical Reproduction", "year": 1935, "coauthors": [] },
+      { "title": "The Arcades Project", "year": 1940, "coauthors": [] },
+      { "title": "Theses on the Philosophy of History", "year": 1940, "coauthors": [] },
+      { "title": "The Task of the Translator", "year": 1923, "coauthors": [] },
+      { "title": "The Author as Producer", "year": 1934, "coauthors": [] }
+    ],
+    "events": [
+      { "title": "Suicide at French-Spanish border", "year": 1940, "location": "Portbou, Spain" },
+      { "title": "Association with Frankfurt School", "year": 1935, "location": "New York, USA" },
+      { "title": "Exile in Paris", "year": 1933, "location": "Paris, France" }
+    ],
+    "connections": ["Theodor Adorno", "Hannah Arendt", "Bertolt Brecht", "Gershom Scholem", "Max Horkheimer"]
+  },
+  "Hannah Arendt": {
+    "name": "Hannah Arendt",
+    "bio": "Hannah Arendt (1906-1975) was a German-born American political theorist. Her many books and articles on topics ranging from totalitarianism to epistemology have had lasting influence on political theory. Arendt is widely considered one of the most important political philosophers of the 20th century, particularly for her analysis of the origins of totalitarianism.",
+    "taxonomies": {
+      "discipline": ["Philosophy", "Political Science"],
+      "tradition": ["Phenomenology"],
+      "era": ["20th Century"],
+      "methodology": ["Textual Analysis"],
+      "theme": ["Power", "Justice", "Democracy"]
+    },
+    "papers": [
+      { "title": "The Origins of Totalitarianism", "year": 1951, "coauthors": [] },
+      { "title": "The Human Condition", "year": 1958, "coauthors": [] },
+      { "title": "Eichmann in Jerusalem", "year": 1963, "coauthors": [] },
+      { "title": "On Revolution", "year": 1963, "coauthors": [] },
+      { "title": "The Life of the Mind", "year": 1978, "coauthors": [] }
+    ],
+    "events": [
+      { "title": "Professor at New School for Social Research", "year": 1967, "location": "New York, USA" },
+      { "title": "Eichmann Trial Coverage", "year": 1961, "location": "Jerusalem, Israel" },
+      { "title": "Escape from Nazi Germany", "year": 1933, "location": "Berlin, Germany" }
+    ],
+    "connections": ["Martin Heidegger", "Karl Jaspers", "Walter Benjamin", "Mary McCarthy", "Hans Jonas"]
+  },
+  "Donna Haraway": {
+    "name": "Donna Haraway",
+    "bio": "Donna Haraway (born 1944) is an American professor emerita in the History of Consciousness Department and Feminist Studies Department at the University of California, Santa Cruz. Haraway is a prominent scholar in the field of science and technology studies, and is known for her work on gender, identity, and technology, which includes the influential essay 'A Cyborg Manifesto'.",
+    "taxonomies": {
+      "discipline": ["Philosophy", "Gender Studies", "Anthropology"],
+      "tradition": ["Feminism", "Post-structuralism"],
+      "era": ["Contemporary", "20th Century", "21st Century"],
+      "methodology": ["Textual Analysis"],
+      "theme": ["Technology", "Embodiment", "Identity"]
+    },
+    "papers": [
+      { "title": "A Cyborg Manifesto", "year": 1985, "coauthors": [] },
+      { "title": "Simians, Cyborgs, and Women", "year": 1991, "coauthors": [] },
+      { "title": "Modest_Witness@Second_Millennium", "year": 1997, "coauthors": [] },
+      { "title": "When Species Meet", "year": 2008, "coauthors": [] },
+      { "title": "Staying with the Trouble", "year": 2016, "coauthors": [] }
+    ],
+    "events": [
+      { "title": "Professor at University of California, Santa Cruz", "year": 1980, "location": "Santa Cruz, USA" },
+      { "title": "Professor at Johns Hopkins University", "year": 1975, "location": "Baltimore, USA" },
+      { "title": "Guggenheim Fellowship", "year": 1987, "location": "New York, USA" }
+    ],
+    "connections": ["Judith Butler", "Bruno Latour", "Sandra Harding", "Gayatri Spivak", "Karen Barad"]
+  },
+  "Pierre Bourdieu": {
+    "name": "Pierre Bourdieu",
+    "bio": "Pierre Bourdieu (1930-2002) was a French sociologist, anthropologist, and philosopher. His work was primarily concerned with the dynamics of power in society, and he developed theories on education, culture, and social class. His concepts of 'cultural capital,' 'habitus,' and 'symbolic violence' have been influential across various disciplines in the social sciences and humanities.",
+    "taxonomies": {
+      "discipline": ["Sociology", "Anthropology", "Philosophy"],
+      "tradition": ["Critical Theory", "Structuralism"],
+      "era": ["20th Century"],
+      "methodology": ["Ethnography", "Dialectical Method"],
+      "theme": ["Power", "Class", "Education"]
+    },
+    "papers": [
+      { "title": "Distinction: A Social Critique of the Judgement of Taste", "year": 1979, "coauthors": [] },
+      { "title": "Outline of a Theory of Practice", "year": 1972, "coauthors": [] },
+      { "title": "Reproduction in Education, Society and Culture", "year": 1970, "coauthors": ["Jean-Claude Passeron"] },
+      { "title": "The Logic of Practice", "year": 1980, "coauthors": [] },
+      { "title": "Homo Academicus", "year": 1984, "coauthors": [] }
+    ],
+    "events": [
+      { "title": "Professor at Collège de France", "year": 1981, "location": "Paris, France" },
+      { "title": "Research in Algeria", "year": 1958, "location": "Algeria" },
+      { "title": "Director of Studies at École des Hautes Études en Sciences Sociales", "year": 1964, "location": "Paris, France" }
+    ],
+    "connections": ["Michel Foucault", "Jean-Paul Sartre", "Jean-Claude Passeron", "Loïc Wacquant", "Raymond Williams"]
+  },
+  "Simone de Beauvoir": {
+    "name": "Simone de Beauvoir",
+    "bio": "Simone de Beauvoir (1908-1986) was a French writer, intellectual, existentialist philosopher, political activist, and feminist. She is known for her 1949 treatise 'The Second Sex', a detailed analysis of women's oppression and a foundational tract of contemporary feminism. She was also known for her lifelong relationship with Jean-Paul Sartre.",
+    "taxonomies": {
+      "discipline": ["Philosophy", "Gender Studies", "Literary Theory"],
+      "tradition": ["Existentialism", "Feminism"],
+      "era": ["20th Century"],
+      "methodology": ["Textual Analysis", "Dialectical Method"],
+      "theme": ["Gender", "Ethics", "Freedom"]
+    },
+    "papers": [
+      { "title": "The Second Sex", "year": 1949, "coauthors": [] },
+      { "title": "The Ethics of Ambiguity", "year": 1947, "coauthors": [] },
+      { "title": "She Came to Stay", "year": 1943, "coauthors": [] },
+      { "title": "The Mandarins", "year": 1954, "coauthors": [] },
+      { "title": "The Coming of Age", "year": 1970, "coauthors": [] }
+    ],
+    "events": [
+      { "title": "Publication of The Second Sex", "year": 1949, "location": "Paris, France" },
+      { "title": "Teaching at Sorbonne", "year": 1931, "location": "Paris, France" },
+      { "title": "Co-founding of Les Temps Modernes journal", "year": 1945, "location": "Paris, France" }
+    ],
+    "connections": ["Jean-Paul Sartre", "Maurice Merleau-Ponty", "Albert Camus", "Judith Butler", "Franz Fanon"]
+  },
+  "Jean-Paul Sartre": {
+    "name": "Jean-Paul Sartre",
+    "bio": "Jean-Paul Sartre (1905-1980) was a French philosopher, playwright, novelist, screenwriter, political activist, biographer, and literary critic. He was one of the key figures in the philosophy of existentialism and phenomenology, and one of the leading figures in 20th-century French philosophy and Marxism. His work has influenced sociology, critical theory, post-colonial theory, and literary studies.",
+    "taxonomies": {
+      "discipline": ["Philosophy", "Literary Theory"],
+      "tradition": ["Existentialism", "Phenomenology", "Marxism"],
+      "era": ["20th Century"],
+      "methodology": ["Dialectical Method"],
+      "theme": ["Freedom", "Consciousness", "Ethics"]
+    },
+    "papers": [
+      { "title": "Being and Nothingness", "year": 1943, "coauthors": [] },
+      { "title": "Existentialism is a Humanism", "year": 1946, "coauthors": [] },
+      { "title": "Critique of Dialectical Reason", "year": 1960, "coauthors": [] },
+      { "title": "Nausea", "year": 1938, "coauthors": [] },
+      { "title": "No Exit", "year": 1944, "coauthors": [] }
+    ],
+    "events": [
+      { "title": "Nobel Prize in Literature (declined)", "year": 1964, "location": "Stockholm, Sweden" },
+      { "title": "Co-founding of Les Temps Modernes journal", "year": 1945, "location": "Paris, France" },
+      { "title": "Prisoner of War", "year": 1940, "location": "Trier, Germany" }
+    ],
+    "connections": ["Simone de Beauvoir", "Albert Camus", "Maurice Merleau-Ponty", "Michel Foucault", "Edmund Husserl"]
+  }
+}
