@@ -907,3 +907,71 @@ input:focus, textarea:focus, select:focus {
     padding: 10px;
     text-align: center;
 }
+
+/* Screen glitch effect */
+.screen-glitch {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        rgba(255, 255, 255, 0.2),
+        rgba(255, 255, 255, 0)
+    );
+    pointer-events: none;
+    z-index: 9999;
+    animation: glitchEffect 0.5s forwards;
+    opacity: 0.8;
+}
+
+@keyframes glitchEffect {
+    0% {
+        opacity: 0.8;
+        transform: translateX(0);
+    }
+    10% {
+        opacity: 0.4;
+        transform: translateX(-2px);
+    }
+    20% {
+        opacity: 0.9;
+        transform: translateX(2px);
+    }
+    30% {
+        opacity: 0.2;
+        transform: translateX(0);
+    }
+    40% {
+        opacity: 0.7;
+        transform: translateX(0);
+    }
+    50% {
+        opacity: 0.9;
+        transform: translateX(-3px);
+    }
+    60% {
+        opacity: 0.3;
+        transform: translateX(3px);
+    }
+    70% {
+        opacity: 0.8;
+        transform: translateX(-1px);
+    }
+    80% {
+        opacity: 0.4;
+        transform: translateX(1px);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(0);
+    }
+}
+
+/* Active nav styling */
+nav a.active {
+    background-color: var(--accent-color);
+    color: var(--terminal-green);
+    text-shadow: 0 0 5px var(--terminal-green);
+    border-color: var(--terminal-green);
+}
