@@ -3,148 +3,514 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KillPhilosophy</title>
+    <title>KillPhilosophy - Academic Network Explorer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <!-- Favicon -->
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
 </head>
 <body>
-    <header>
-        <div class="logo">killphilosophy</div>
-        <nav>
-            <a href="#" id="nav-search">Search</a>
-            <a href="#" id="nav-database">Database</a>
-            <a href="#" id="nav-novelty-tiles">Novelty Tiles</a>
-            <a href="#" id="nav-deep-search">Deep Search</a>
-            <a href="#" id="nav-about">About</a>
-            <a href="#" id="nav-contribute">Contribute</a>
-            <a href="#" id="nav-admin" class="admin-link" style="display: none;">Admin</a>
-        </nav>
-    </header>
-
-    <main>
-        <section class="search-container">
-            <input type="text" class="search-box" placeholder="Search for an academic (e.g., Michel Foucault, Judith Butler, Slavoj Žižek)">
-            <div class="search-status">
-                <span class="loader"></span> <span class="search-status-text">Initiating deep search...</span>
-            </div>
-        </section>
-
-        <section class="results-container">
-            <div class="academic-profile" id="academic-profile">
-                <div class="academic-header">
-                    <div class="academic-name" id="academic-name"></div>
-                    <div class="academic-dates" id="academic-dates"></div>
-                </div>
-                <div class="academic-bio" id="academic-bio"></div>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="#" class="nav-logo">KillPhilosophy</a>
                 
-                <div class="taxonomy-container" id="taxonomy-container">
-                    <div class="section-title">Taxonomies</div>
-                    <div id="taxonomies-list" class="taxonomies-list"></div>
+                <ul class="nav-menu">
+                    <li class="nav-item"><a href="#" id="nav-search" class="nav-link active">Search</a></li>
+                    <li class="nav-item"><a href="#" id="nav-database" class="nav-link">Database</a></li>
+                    <li class="nav-item"><a href="#" id="nav-novelty-tiles" class="nav-link">Novelty Tiles</a></li>
+                    <li class="nav-item"><a href="#" id="nav-deep-search" class="nav-link">Deep Search</a></li>
+                    <li class="nav-item"><a href="#" id="nav-about" class="nav-link">About</a></li>
+                    <li class="nav-item"><a href="#" id="nav-contribute" class="nav-link">Contribute</a></li>
+                </ul>
+                
+                <button class="mobile-nav-toggle">☰</button>
+            </nav>
+        </div>
+    </header>
+    
+    <!-- Main Content Area -->
+    <main class="content-area">
+        <div class="container">
+            <!-- Search -->
+            <div class="search-container">
+                <input type="text" class="search-box" placeholder="Search for an academic...">
+                <div class="search-status">
+                    <p class="search-status-text">Searching...</p>
                 </div>
-
-                <div class="section-title">Key Works</div>
-                <div id="papers-list"></div>
-
-                <div class="section-title">Event Appearances</div>
-                <div id="events-list"></div>
-
-                <div class="section-title">Connections to Other Academics</div>
-                <div id="connections-list"></div>
-
-                <button class="add-info-btn" id="add-info-btn">Add Information</button>
-
-                <div class="form-container" id="add-info-form">
-                    <!-- Form fields remain the same, no changes needed here -->
-                    <!-- Paper, Event, Connection, and Taxonomy fields remain unchanged -->
-                    <!-- ... -->
+            </div>
+            
+            <!-- Academic Profile -->
+            <section id="academic-profile" class="academic-profile">
+                <div class="academic-header">
+                    <h1 id="academic-name" class="academic-name"></h1>
+                    <div class="academic-actions">
+                        <button id="add-to-favorites" class="button secondary-button">Add to Favorites</button>
+                    </div>
+                </div>
+                
+                <p id="academic-bio" class="academic-bio"></p>
+                
+                <!-- Taxonomies -->
+                <div class="taxonomy-section">
+                    <div class="grid grid-2">
+                        <div>
+                            <h3 class="taxonomy-title">Discipline</h3>
+                            <div id="taxonomy-discipline" class="taxonomy-list"></div>
+                        </div>
+                        <div>
+                            <h3 class="taxonomy-title">Tradition</h3>
+                            <div id="taxonomy-tradition" class="taxonomy-list"></div>
+                        </div>
+                    </div>
                     
-                    <div class="form-field github-field">
-                        <label>
-                            <input type="checkbox" id="contribute-to-github" checked>
-                            Contribute this information to the public database
-                        </label>
-                        <p class="github-info">Your contribution will be submitted as a pull request to the GitHub repository.</p>
+                    <div class="grid grid-3 mt-md">
+                        <div>
+                            <h3 class="taxonomy-title">Era</h3>
+                            <div id="taxonomy-era" class="taxonomy-list"></div>
+                        </div>
+                        <div>
+                            <h3 class="taxonomy-title">Methodology</h3>
+                            <div id="taxonomy-methodology" class="taxonomy-list"></div>
+                        </div>
+                        <div>
+                            <h3 class="taxonomy-title">Theme</h3>
+                            <div id="taxonomy-theme" class="taxonomy-list"></div>
+                        </div>
                     </div>
-
-                    <div class="form-field github-identity" style="display: none;">
-                        <label for="github-username">GitHub Username (optional)</label>
-                        <input type="text" id="github-username" placeholder="Leave blank for anonymous contribution">
+                </div>
+                
+                <!-- Academic Content -->
+                <div class="grid grid-3 academic-content-section">
+                    <div>
+                        <h2 class="section-title">Papers</h2>
+                        <div id="papers-list"></div>
                     </div>
-
-                    <button class="submit-btn" id="submit-info">Submit</button>
+                    
+                    <div>
+                        <h2 class="section-title">Events</h2>
+                        <div id="events-list"></div>
+                    </div>
+                    
+                    <div>
+                        <h2 class="section-title">Connections</h2>
+                        <div id="connections-list"></div>
+                    </div>
                 </div>
-            </div>
-        </section>
-
-        <!-- All other sections remain unchanged -->
-        <!-- ... -->
-        
-        <!-- GitHub Panel - Update the repository value -->
-        <div class="admin-panel" id="panel-github">
-            <h3>GitHub Repository Integration</h3>
-            <div class="github-status">
-                <p>The database is stored in the GitHub repository and updated through pull requests.</p>
-                <div class="form-field">
-                    <label for="github-repo">Repository</label>
-                    <input type="text" id="github-repo" value="ambeidetic/killphilosophy">
+                
+                <!-- Add Information Form -->
+                <div id="add-info-form" class="card mt-xl" style="display: none;">
+                    <h2>Contribute Information</h2>
+                    <form>
+                        <div class="form-row">
+                            <label class="form-label">Contribution Type</label>
+                            <div class="flex gap-md">
+                                <div class="checkbox-item">
+                                    <input type="radio" name="contribution-type" id="contribute-paper" checked>
+                                    <label for="contribute-paper">Paper</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="radio" name="contribution-type" id="contribute-event">
+                                    <label for="contribute-event">Event</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="radio" name="contribution-type" id="contribute-connection">
+                                    <label for="contribute-connection">Connection</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="paper-form">
+                            <div class="form-row">
+                                <label class="form-label" for="paper-title">Paper Title</label>
+                                <input type="text" id="paper-title" placeholder="Enter paper title">
+                            </div>
+                            
+                            <div class="form-row">
+                                <label class="form-label" for="paper-year">Year</label>
+                                <input type="number" id="paper-year" placeholder="Publication year">
+                            </div>
+                            
+                            <div class="form-row">
+                                <label class="form-label" for="paper-coauthors">Co-authors (comma separated)</label>
+                                <input type="text" id="paper-coauthors" placeholder="Enter co-authors">
+                            </div>
+                        </div>
+                        
+                        <div id="event-form" style="display: none;">
+                            <div class="form-row">
+                                <label class="form-label" for="event-title">Event Title</label>
+                                <input type="text" id="event-title" placeholder="Enter event title">
+                            </div>
+                            
+                            <div class="form-row">
+                                <label class="form-label" for="event-year">Year</label>
+                                <input type="number" id="event-year" placeholder="Event year">
+                            </div>
+                            
+                            <div class="form-row">
+                                <label class="form-label" for="event-location">Location</label>
+                                <input type="text" id="event-location" placeholder="Event location">
+                            </div>
+                        </div>
+                        
+                        <div id="connection-form" style="display: none;">
+                            <div class="form-row">
+                                <label class="form-label" for="connection-name">Connected Academic</label>
+                                <input type="text" id="connection-name" placeholder="Enter academic name">
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" id="submit-contribution" class="button primary-button">Submit Contribution</button>
+                            <button type="button" id="cancel-contribution" class="button tertiary-button">Cancel</button>
+                        </div>
+                    </form>
                 </div>
-                <div class="form-field">
-                    <label for="github-token">Personal Access Token (for admin operations)</label>
-                    <input type="password" id="github-token" placeholder="Enter token to enable admin features">
+            </section>
+            
+            <!-- Database Browser -->
+            <section id="database-browser" class="database-browser" style="display: none;">
+                <h1 class="text-primary mb-lg">Academic Database</h1>
+                
+                <div class="card">
+                    <div id="database-academics"></div>
                 </div>
-                <button class="submit-btn" id="connect-github">Connect GitHub</button>
-            </div>
-
-            <!-- GitHub operations section remains unchanged -->
+            </section>
+            
+            <!-- Novelty Tiles -->
+            <section id="novelty-tiles-container" class="novelty-tiles-container" style="display: none;">
+                <h1 class="text-primary mb-lg">Novelty Tiles</h1>
+                <p class="mb-lg">Discover new content from academics in your network.</p>
+                
+                <div id="novelty-tiles" class="novelty-tiles"></div>
+            </section>
+            
+            <!-- Deep Search -->
+            <section id="deep-search-container" class="deep-search-container" style="display: none;">
+                <div class="deep-search-header">
+                    <h1 class="text-primary">Deep Academic Search</h1>
+                    <p>Find connections and relationships between academics or discover new scholars.</p>
+                </div>
+                
+                <div class="deep-search-form">
+                    <div class="form-row">
+                        <label class="form-label" for="search-academic1">Primary Academic</label>
+                        <input type="text" id="search-academic1" placeholder="Enter academic name">
+                        <span class="form-hint">The main academic you want to research.</span>
+                    </div>
+                    
+                    <div class="form-row">
+                        <label class="form-label" for="search-academic2">Secondary Academic (Optional)</label>
+                        <input type="text" id="search-academic2" placeholder="Enter another academic name">
+                        <span class="form-hint">Add a second academic to explore connections between them.</span>
+                    </div>
+                    
+                    <div class="form-row">
+                        <label class="form-label">Search Depth</label>
+                        <div class="search-depth-options">
+                            <div class="search-depth-option selected" data-value="standard">
+                                <div class="search-depth-title">Standard</div>
+                                <div class="search-depth-description">Basic connections and information.</div>
+                            </div>
+                            <div class="search-depth-option" data-value="extended">
+                                <div class="search-depth-title">Extended</div>
+                                <div class="search-depth-description">Deeper connections and rare publications.</div>
+                            </div>
+                            <div class="search-depth-option" data-value="comprehensive">
+                                <div class="search-depth-title">Comprehensive</div>
+                                <div class="search-depth-description">Full historical and conceptual analysis.</div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="search-depth" value="standard">
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button id="run-deep-search" class="button primary-button">Run Deep Search</button>
+                    </div>
+                </div>
+                
+                <!-- Search Progress Indicator -->
+                <div class="search-status-container">
+                    <p id="search-progress-text" class="search-progress-text">Initiating search...</p>
+                    <div class="deep-search-progress">
+                        <div class="deep-search-progress-bar"></div>
+                    </div>
+                </div>
+                
+                <!-- Search Results -->
+                <div id="deep-search-results" class="deep-search-results"></div>
+                
+                <!-- Modification Form -->
+                <div id="modification-form" class="modification-form">
+                    <h2>Modify Academic Before Adding</h2>
+                    
+                    <form>
+                        <div class="form-section">
+                            <h3>Basic Information</h3>
+                            <div class="form-row">
+                                <label class="form-label" for="modify-name">Name</label>
+                                <input type="text" id="modify-name">
+                            </div>
+                            
+                            <div class="form-row">
+                                <label class="form-label" for="modify-bio">Bio</label>
+                                <textarea id="modify-bio" rows="5"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="form-section">
+                            <h3>Taxonomies</h3>
+                            
+                            <div class="grid grid-2">
+                                <div class="form-row">
+                                    <label class="form-label">Discipline</label>
+                                    <div id="modify-discipline" class="checkbox-list">
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="discipline-philosophy" value="Philosophy">
+                                            <label for="discipline-philosophy">Philosophy</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="discipline-sociology" value="Sociology">
+                                            <label for="discipline-sociology">Sociology</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="discipline-literary-theory" value="Literary Theory">
+                                            <label for="discipline-literary-theory">Literary Theory</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="discipline-political-science" value="Political Science">
+                                            <label for="discipline-political-science">Political Science</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="discipline-history" value="History">
+                                            <label for="discipline-history">History</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="discipline-gender-studies" value="Gender Studies">
+                                            <label for="discipline-gender-studies">Gender Studies</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="discipline-anthropology" value="Anthropology">
+                                            <label for="discipline-anthropology">Anthropology</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="discipline-psychology" value="Psychology">
+                                            <label for="discipline-psychology">Psychology</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <label class="form-label">Tradition</label>
+                                    <div id="modify-tradition" class="checkbox-list">
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="tradition-existentialism" value="Existentialism">
+                                            <label for="tradition-existentialism">Existentialism</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="tradition-post-structuralism" value="Post-structuralism">
+                                            <label for="tradition-post-structuralism">Post-structuralism</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="tradition-phenomenology" value="Phenomenology">
+                                            <label for="tradition-phenomenology">Phenomenology</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="tradition-critical-theory" value="Critical Theory">
+                                            <label for="tradition-critical-theory">Critical Theory</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="tradition-marxism" value="Marxism">
+                                            <label for="tradition-marxism">Marxism</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="tradition-hermeneutics" value="Hermeneutics">
+                                            <label for="tradition-hermeneutics">Hermeneutics</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="tradition-pragmatism" value="Pragmatism">
+                                            <label for="tradition-pragmatism">Pragmatism</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-3 mt-md">
+                                <div class="form-row">
+                                    <label class="form-label">Era</label>
+                                    <div id="modify-era" class="checkbox-list">
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="era-20th-century" value="20th Century">
+                                            <label for="era-20th-century">20th Century</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="era-21st-century" value="21st Century">
+                                            <label for="era-21st-century">21st Century</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="era-contemporary" value="Contemporary">
+                                            <label for="era-contemporary">Contemporary</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="era-modern" value="Modern">
+                                            <label for="era-modern">Modern</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="era-ancient" value="Ancient">
+                                            <label for="era-ancient">Ancient</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="era-medieval" value="Medieval">
+                                            <label for="era-medieval">Medieval</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <label class="form-label">Methodology</label>
+                                    <div id="modify-methodology" class="checkbox-list">
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="methodology-textual-analysis" value="Textual Analysis">
+                                            <label for="methodology-textual-analysis">Textual Analysis</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="methodology-dialectical-method" value="Dialectical Method">
+                                            <label for="methodology-dialectical-method">Dialectical Method</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="methodology-genealogy" value="Genealogy">
+                                            <label for="methodology-genealogy">Genealogy</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="methodology-deconstruction" value="Deconstruction">
+                                            <label for="methodology-deconstruction">Deconstruction</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="methodology-ethnography" value="Ethnography">
+                                            <label for="methodology-ethnography">Ethnography</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="methodology-discourse-analysis" value="Discourse Analysis">
+                                            <label for="methodology-discourse-analysis">Discourse Analysis</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <label class="form-label">Theme</label>
+                                    <div id="modify-theme" class="checkbox-list">
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="theme-power" value="Power">
+                                            <label for="theme-power">Power</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="theme-identity" value="Identity">
+                                            <label for="theme-identity">Identity</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="theme-language" value="Language">
+                                            <label for="theme-language">Language</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="theme-justice" value="Justice">
+                                            <label for="theme-justice">Justice</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="theme-ethics" value="Ethics">
+                                            <label for="theme-ethics">Ethics</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="theme-consciousness" value="Consciousness">
+                                            <label for="theme-consciousness">Consciousness</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="theme-embodiment" value="Embodiment">
+                                            <label for="theme-embodiment">Embodiment</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="theme-capitalism" value="Capitalism">
+                                            <label for="theme-capitalism">Capitalism</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="theme-democracy" value="Democracy">
+                                            <label for="theme-democracy">Democracy</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="theme-technology" value="Technology">
+                                            <label for="theme-technology">Technology</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-section">
+                            <h3>Papers</h3>
+                            <div id="modify-papers" class="papers-container">
+                                <!-- Paper rows will be added dynamically -->
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button id="save-modifications" class="button primary-button">Save and Add to Database</button>
+                            <button id="cancel-modifications" class="button tertiary-button">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
         </div>
     </main>
-
-    <footer>
-        <div>&copy; 2025 killphilosophy</div>
-        <div class="network-tag">Net.Academics.v0.1</div>
-        <div class="github-link">
-            <a href="https://github.com/ambeidetic/killphilosophy" target="_blank" id="repo-link">
-                <svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align: middle;">
-                    <path fill="currentColor" d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path>
-                </svg>
-                View on GitHub
-            </a>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 KillPhilosophy. A tool for exploring academic networks.</p>
         </div>
     </footer>
-
-    <!-- Modal - Update the GitHub URL -->
-    <div class="modal" id="about-modal">
+    
+    <!-- Modals -->
+    <div id="about-modal" class="modal">
         <div class="modal-content">
-            <span class="close-modal" id="close-about-modal">&times;</span>
+            <span id="close-about-modal" class="modal-close">&times;</span>
             <h2>About KillPhilosophy</h2>
-            <p>KillPhilosophy is an open-source database mapping the interconnections between academics across disciplines. Our aim is to create a comprehensive resource that reveals the networks of influence, collaboration, and critique that shape intellectual history.</p>
-            <p>The project takes its provocative name from the notion that philosophy—and academia broadly—thrives not in isolation but in connection. We "kill" the myth of the solitary thinker by exposing the rich tapestry of relationships that generate and transform ideas.</p>
-            <p>This platform allows users to search for academics, view their works and connections, and contribute to our growing database. All data is community-sourced and openly available.</p>
-            <h3>How to Use</h3>
-            <p>1. <strong>Search</strong> for an academic by name</p>
-            <p>2. View their <strong>technical brochure</strong> containing papers, events, and connections</p>
-            <p>3. <strong>Contribute</strong> by adding information about academics</p>
-            <p>4. <strong>Explore</strong> the network of connections between different thinkers</p>
+            <p class="mb-md">KillPhilosophy is an academic network exploration tool for understanding connections between philosophers, critical theorists, and other intellectuals.</p>
             
-            <h3>Open Source & Data Contribution</h3>
-            <p>KillPhilosophy is both the website you're viewing and the database that powers it. All data is stored in our GitHub repository and updates to the database are managed through GitHub's version control system.</p>
-            <p>When you contribute information, you're helping to build a living archive of academic connections that anyone can access, study, and expand.</p>
-            <p><a href="https://github.com/ambeidetic/killphilosophy" target="_blank" id="about-repo-link">Visit our GitHub repository</a></p>
-        </div>
-    </div>
-
-    <!-- Contribution Modal -->
-    <div class="modal" id="contribution-modal">
-        <div class="modal-content">
-            <span class="close-modal" id="close-contribution-modal">&times;</span>
-            <h2>Contribution Submitted</h2>
-            <div id="contribution-result">
-                <!-- Dynamically populated -->
+            <h3 class="mb-sm">Features</h3>
+            <ul class="mb-md">
+                <li>Search and explore detailed academic profiles</li>
+                <li>Discover connections between academics</li>
+                <li>Track papers, events, and intellectual lineages</li>
+                <li>Receive notifications about new content</li>
+                <li>Contribute to the growing database</li>
+            </ul>
+            
+            <h3 class="mb-sm">GitHub Project</h3>
+            <div class="github-stats mb-md">
+                <div class="stat-item">
+                    <div id="github-stars" class="stat-value">0</div>
+                    <div class="stat-label">Stars</div>
+                </div>
+                <div class="stat-item">
+                    <div id="github-forks" class="stat-value">0</div>
+                    <div class="stat-label">Forks</div>
+                </div>
+                <div class="stat-item">
+                    <div id="github-issues" class="stat-value">0</div>
+                    <div class="stat-label">Issues</div>
+                </div>
             </div>
+            
+            <h3 class="mb-sm">Contributors</h3>
+            <div id="github-contributors" class="github-contributors mb-md"></div>
+            
+            <h3 class="mb-sm">Latest Update</h3>
+            <div id="github-last-commit" class="github-last-commit"></div>
+            
+            <button id="refresh-github-data" class="button secondary-button mt-md">Refresh GitHub Data</button>
         </div>
     </div>
-
+    
+    <!-- Scripts -->
     <script src="database.js"></script>
     <script src="github-api.js"></script>
     <script src="app.js"></script>
