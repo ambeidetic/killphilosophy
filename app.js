@@ -1,4 +1,7 @@
-// Enhanced initialization for KillPhilosophy application
+/**
+ * KillPhilosophy Application
+ * Main application logic for the interactive academic network visualization tool
+ */
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Initializing KillPhilosophy application...');
@@ -6,8 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check for browser compatibility
     checkFeatureSupport();
     
-    // Initialize database
-    initializeDatabase();
+    // Setup error handling
+    setupGlobalErrorHandling();
     
     // Setup event listeners
     setupEventListeners();
@@ -31,22 +34,114 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Check for admin access
     checkAdminAccess();
+    
+    // Add visualization container if not present
+    addVisualizationContainer();
 });
 
 /**
- * Check for browser feature support
+ * Setup global error handling
+ */
+function setupGlobalErrorHandling() {
+    window.displayErrorMessage = function(message, context = 'general') {
+        console.error(`[${context}] Error:`, message);
+        
+        // Create error element
+        const errorElement = document.createElement('div');
+        errorElement.className = 'error-message';
+        errorElement.textContent = message;
+        
+        // Find appropriate container based on context
+        let container;
+        switch (context) {
+            case 'github':
+                container = document.getElementById('github-status-panel') || 
+                           document.getElementById('contribution-result');
+                break;
+            case 'deepsearch':
+                container = document.getElementById('deep-search-results');
+                break;
+            case 'database':
+                container = document.getElementById('database-status') || 
+                           document.querySelector('.search-status');
+                break;
+            default:
+                // Try to find a suitable container
+                container = document.querySelector('.status-container') || 
+                           document.querySelector('main') || 
+                           document.body;
+        }
+        
+        if (container) {
+            // Remove any existing errors
+            const existingErrors = container.querySelectorAll('.error-message');
+            existingErrors.forEach(el => el.remove());
+            
+            // Add the new error
+            container.prepend(errorElement);
+            
+            // Auto-remove after 10 seconds
+            setTimeout(() => {
+                errorElement.style.opacity = '0';
+                setTimeout(() => errorElement.remove(), 1000);
+            }, 10000);
+        }
+    };
+    
+    // Global error handler
+    window.addEventListener('error', (event) => {
+        displayErrorMessage(`Script error: ${event.message}`, 'global');
+    });
+    
+    // Unhandled promise rejection handler
+    window.addEventListener('unhandledrejection', (event) => {
+        displayErrorMessage(`Promise error: ${event.reason}`, 'global');
+    });
+}
+
+/**
+ * Add visualization container if not present
+ */
+function addVisualizationContainer() {
+    // Check if visualization container exists
+    let vizContainer = document.getElementById('visualization-container');
+    
+    if (!vizContainer) {
+        // Find a suitable parent element
+        const parent = document.getElementById('results-container') || 
+                       document.getElementById('deep-search-container') || 
+                       document.getElementById('database-container') || 
+                       document.body;
+        
+        // Create the container
+        vizContainer = document.createElement('div');
+        vizContainer.id = 'visualization-container';
+        vizContainer.className = 'visualization-content';
+        vizContainer.setAttribute('data-description', 'Network visualization of academic connections');
+        
+        // Add to DOM
+        parent.appendChild(vizContainer);
+    }
+}
+
+/**
+ * Enhanced browser compatibility check with user notification
  */
 function checkFeatureSupport() {
+    let incompatibilities = [];
+    
     // Check for localStorage support
     const localStorageSupported = checkLocalStorageSupport();
     if (!localStorageSupported) {
         console.warn('localStorage not supported. Data will not be saved between sessions.');
+        incompatibilities.push('Local storage is not supported - your data won\'t be saved between sessions.');
     }
     
     // Check for Fetch API
     const fetchSupported = 'fetch' in window;
     if (!fetchSupported) {
         console.warn('Fetch API not supported. GitHub and DeepSearch features will be limited.');
+        incompatibilities.push('Fetch API not supported - GitHub and DeepSearch features will be limited.');
         disableAPIFeatures();
     }
     
@@ -54,6 +149,90 @@ function checkFeatureSupport() {
     const es6Supported = typeof Symbol !== 'undefined';
     if (!es6Supported) {
         console.warn('ES6 not fully supported. Some features may not work correctly.');
+        incompatibilities.push('ES6 features not fully supported - some functionality may be limited.');
+    }
+    
+    // Check for D3.js
+    const d3Supported = typeof d3 !== 'undefined';
+    if (!d3Supported) {
+        console.warn('D3.js not loaded. Network visualization will not be available.');
+        incompatibilities.push('D3.js library not loaded - network visualization will not be available.');
+    }
+    
+    // Display incompatibility warnings to user if needed
+    if (incompatibilities.length > 0) {
+        showBrowserCompatibilityWarning(incompatibilities);
+    }
+}
+
+/**
+ * Display browser compatibility warning to the user
+ * @param {Array} issues - List of compatibility issues
+ */
+function showBrowserCompatibilityWarning(issues) {
+    // Create warning container
+    const warningContainer = document.createElement('div');
+    warningContainer.className = 'browser-compatibility-warning';
+    warningContainer.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: rgba(50, 50, 50, 0.9);
+        border: 1px solid var(--accent-color);
+        padding: 15px;
+        max-width: 300px;
+        z-index: 1000;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        font-family: var(--font-mono);
+        color: var(--text-color);
+    `;
+    
+    // Add warning header
+    const header = document.createElement('h3');
+    header.textContent = 'Browser Compatibility Issues';
+    header.style.cssText = 'margin-top: 0; color: var(--error-color);';
+    warningContainer.appendChild(header);
+    
+    // Add issues list
+    const issuesList = document.createElement('ul');
+    issues.forEach(issue => {
+        const item = document.createElement('li');
+        item.textContent = issue;
+        item.style.margin = '5px 0';
+        issuesList.appendChild(item);
+    });
+    warningContainer.appendChild(issuesList);
+    
+    // Add close button
+    const closeButton = document.createElement('button');
+    closeButton.textContent = 'Dismiss';
+    closeButton.style.cssText = `
+        background-color: var(--accent-color);
+        border: none;
+        padding: 5px 10px;
+        margin-top: 10px;
+        cursor: pointer;
+        font-family: var(--font-mono);
+        color: var(--text-color);
+    `;
+    closeButton.onclick = () => warningContainer.remove();
+    warningContainer.appendChild(closeButton);
+    
+    // Add to document
+    document.body.appendChild(warningContainer);
+}
+
+/**
+ * Check for localStorage support
+ */
+function checkLocalStorageSupport() {
+    try {
+        const testKey = 'test';
+        localStorage.setItem(testKey, testKey);
+        localStorage.removeItem(testKey);
+        return true;
+    } catch (e) {
+        return false;
     }
 }
 
@@ -74,23 +253,32 @@ function disableAPIFeatures() {
         navDeepSearch.setAttribute('aria-disabled', 'true');
         navDeepSearch.addEventListener('click', (e) => {
             e.preventDefault();
-            alert('Deep Search requires a modern browser with Fetch API support.');
+            displayErrorMessage('Deep Search requires a modern browser with Fetch API support.', 'deepsearch');
         }, { capture: true });
     }
 }
 
 /**
- * Check for localStorage support
+ * Hide all sections
  */
-function checkLocalStorageSupport() {
-    try {
-        const testKey = 'test';
-        localStorage.setItem(testKey, testKey);
-        localStorage.removeItem(testKey);
-        return true;
-    } catch (e) {
-        return false;
-    }
+function hideAllSections() {
+    const sections = [
+        'search-container',
+        'results-container',
+        'database-container',
+        'novelty-tiles-container',
+        'deep-search-container',
+        'about-container',
+        'contribute-container',
+        'admin-container'
+    ];
+    
+    sections.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.style.display = 'none';
+        }
+    });
 }
 
 /**
@@ -115,6 +303,929 @@ function setActiveNavItem(id) {
     navItems.forEach(item => {
         item.style.display = 'inline-block';
     });
+}
+
+/**
+ * Initialize terminal cursor blinking
+ */
+function initializeTerminalCursor() {
+    // Create cursor element if it doesn't exist
+    let cursor = document.querySelector('.terminal-cursor');
+    if (!cursor) {
+        const searchBox = document.querySelector('.search-box');
+        if (searchBox) {
+            cursor = document.createElement('span');
+            cursor.className = 'terminal-cursor';
+            cursor.textContent = '█';
+            searchBox.parentNode.insertBefore(cursor, searchBox.nextSibling);
+        }
+    }
+    
+    // Set up blinking
+    if (cursor) {
+        setInterval(() => {
+            cursor.style.opacity = cursor.style.opacity === '0' ? '1' : '0';
+        }, 500);
+    }
+}
+
+/**
+ * Make sure the logo works correctly as a home button
+ */
+function initializeLogoAnimation() {
+    const mainLogo = document.getElementById('main-logo');
+    if (!mainLogo) return;
+    
+    mainLogo.addEventListener('click', () => {
+        console.log('Logo clicked, returning to home view');
+        
+        // Reset to home view
+        hideAllSections();
+        document.getElementById('search-container').style.display = 'block';
+        setActiveNavItem('nav-search');
+        
+        // Focus the search box
+        const searchBox = document.querySelector('.search-box');
+        if (searchBox) {
+            searchBox.focus();
+        }
+        
+        // Add animation class
+        mainLogo.classList.add('animated');
+        
+        // Remove animation class after animation completes
+        setTimeout(() => {
+            mainLogo.classList.remove('animated');
+        }, 2000);
+        
+        // Show glitch effect
+        showGlitchEffect();
+    });
+}
+
+/**
+ * Show glitch effect on the screen
+ */
+function showGlitchEffect() {
+    // Create glitch overlay if it doesn't exist
+    let glitchOverlay = document.getElementById('glitch-overlay');
+    if (!glitchOverlay) {
+        glitchOverlay = document.createElement('div');
+        glitchOverlay.id = 'glitch-overlay';
+        glitchOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 255, 0, 0.05);
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        `;
+        document.body.appendChild(glitchOverlay);
+    }
+    
+    // Show the glitch effect
+    glitchOverlay.style.opacity = '1';
+    
+    // Add some random glitch elements
+    for (let i = 0; i < 10; i++) {
+        const glitch = document.createElement('div');
+        glitch.className = 'glitch-element';
+        glitch.style.cssText = `
+            position: absolute;
+            background-color: rgba(0, 255, 0, 0.2);
+            height: ${Math.random() * 5}px;
+            width: ${Math.random() * 100}%;
+            top: ${Math.random() * 100}%;
+            left: ${Math.random() * 100}%;
+            animation: glitch-move 0.2s linear;
+        `;
+        glitchOverlay.appendChild(glitch);
+    }
+    
+    // Hide the glitch effect after a short time
+    setTimeout(() => {
+        glitchOverlay.style.opacity = '0';
+        
+        // Remove glitch elements after animation completes
+        setTimeout(() => {
+            glitchOverlay.innerHTML = '';
+        }, 200);
+    }, 300);
+}
+
+/**
+ * Setup event listeners
+ */
+function setupEventListeners() {
+    // Navigation event listeners
+    const navSearchEl = document.getElementById('nav-search');
+    const navDatabaseEl = document.getElementById('nav-database');
+    const navNoveltyTilesEl = document.getElementById('nav-novelty-tiles');
+    const navDeepSearchEl = document.getElementById('nav-deep-search');
+    const navAboutEl = document.getElementById('nav-about');
+    const navContributeEl = document.getElementById('nav-contribute');
+    
+    if (navSearchEl) navSearchEl.addEventListener('click', navSearchHandler);
+    if (navDatabaseEl) navDatabaseEl.addEventListener('click', navDatabaseHandler);
+    if (navNoveltyTilesEl) navNoveltyTilesEl.addEventListener('click', navNoveltyHandler);
+    if (navDeepSearchEl) navDeepSearchEl.addEventListener('click', navDeepSearchHandler);
+    if (navAboutEl) navAboutEl.addEventListener('click', navAboutHandler);
+    if (navContributeEl) navContributeEl.addEventListener('click', navContributeHandler);
+    
+    // Setup search listeners
+    setupSearchListeners();
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        // Alt + S for search
+        if (e.altKey && e.key === 's') {
+            e.preventDefault();
+            navSearchHandler();
+        }
+        // Alt + D for database
+        else if (e.altKey && e.key === 'd') {
+            e.preventDefault();
+            navDatabaseHandler();
+        }
+        // Alt + N for novelty tiles
+        else if (e.altKey && e.key === 'n') {
+            e.preventDefault();
+            navNoveltyHandler();
+        }
+        // Alt + F for deep search
+        else if (e.altKey && e.key === 'f') {
+            e.preventDefault();
+            navDeepSearchHandler();
+        }
+        // Alt + A for about
+        else if (e.altKey && e.key === 'a') {
+            e.preventDefault();
+            navAboutHandler();
+        }
+        // Alt + C for contribute
+        else if (e.altKey && e.key === 'c') {
+            e.preventDefault();
+            navContributeHandler();
+        }
+        // Escape to return to search
+        else if (e.key === 'Escape') {
+            // Only trigger if not in an input field
+            if (document.activeElement.tagName !== 'INPUT' && 
+                document.activeElement.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                navSearchHandler();
+            }
+        }
+    });
+}
+
+/**
+ * Navigation handlers
+ */
+function navSearchHandler() {
+    hideAllSections();
+    document.getElementById('search-container').style.display = 'block';
+    setActiveNavItem('nav-search');
+    
+    // Focus the search box
+    const searchBox = document.querySelector('.search-box');
+    if (searchBox) {
+        searchBox.focus();
+    }
+}
+
+function navDatabaseHandler() {
+    hideAllSections();
+    document.getElementById('database-container').style.display = 'block';
+    setActiveNavItem('nav-database');
+    
+    // Load database listing if not already loaded
+    loadDatabaseListing();
+}
+
+function navNoveltyHandler() {
+    hideAllSections();
+    document.getElementById('novelty-tiles-container').style.display = 'block';
+    setActiveNavItem('nav-novelty-tiles');
+    
+    // Load novelty tiles if not already loaded
+    loadNoveltyTiles();
+}
+
+function navDeepSearchHandler() {
+    hideAllSections();
+    document.getElementById('deep-search-container').style.display = 'block';
+    setActiveNavItem('nav-deep-search');
+    
+    // Focus the deep search input
+    const deepSearchInput = document.getElementById('deep-search-input');
+    if (deepSearchInput) {
+        deepSearchInput.focus();
+    }
+}
+
+function navAboutHandler() {
+    hideAllSections();
+    document.getElementById('about-container').style.display = 'block';
+    setActiveNavItem('nav-about');
+}
+
+function navContributeHandler() {
+    hideAllSections();
+    document.getElementById('contribute-container').style.display = 'block';
+    setActiveNavItem('nav-contribute');
+}
+
+function navAdminHandler() {
+    showGlitchEffect();
+    hideAllSections();
+    document.getElementById('admin-container').style.display = 'block';
+    setActiveNavItem('nav-admin');
+}
+
+/**
+ * Load database listing
+ */
+function loadDatabaseListing() {
+    const databaseContent = document.getElementById('database-content');
+    if (!databaseContent) return;
+    
+    // Clear existing content
+    databaseContent.innerHTML = '';
+    
+    // Check if database manager is available
+    if (typeof databaseManager === 'undefined') {
+        databaseContent.innerHTML = '<div class="error-message">Database manager not available</div>';
+        return;
+    }
+    
+    // Get all academics
+    const academics = databaseManager.getAllAcademics();
+    
+    if (!academics || academics.length === 0) {
+        databaseContent.innerHTML = '<div class="info-message">No academics found in the database</div>';
+        return;
+    }
+    
+    // Sort academics by name
+    academics.sort((a, b) => a.name.localeCompare(b.name));
+    
+    // Group academics by first letter
+    const groupedAcademics = {};
+    academics.forEach(academic => {
+        const firstLetter = academic.name.charAt(0).toUpperCase();
+        if (!groupedAcademics[firstLetter]) {
+            groupedAcademics[firstLetter] = [];
+        }
+        groupedAcademics[firstLetter].push(academic);
+    });
+    
+    // Create alphabet navigation
+    const alphabetNav = document.createElement('div');
+    alphabetNav.className = 'alphabet-nav';
+    
+    // Get all letters that have academics
+    const letters = Object.keys(groupedAcademics).sort();
+    
+    // Add all letters A-Z with disabled state for those without academics
+    for (let i = 65; i <= 90; i++) {
+        const letter = String.fromCharCode(i);
+        const letterLink = document.createElement('a');
+        letterLink.textContent = letter;
+        letterLink.href = `#letter-${letter}`;
+        
+        if (!letters.includes(letter)) {
+            letterLink.className = 'disabled';
+        }
+        
+        alphabetNav.appendChild(letterLink);
+    }
+    
+    databaseContent.appendChild(alphabetNav);
+    
+    // Create academic listings by letter
+    letters.forEach(letter => {
+        const letterSection = document.createElement('div');
+        letterSection.className = 'letter-section';
+        letterSection.id = `letter-${letter}`;
+        
+        const letterHeader = document.createElement('h2');
+        letterHeader.textContent = letter;
+        letterSection.appendChild(letterHeader);
+        
+        const academicsList = document.createElement('div');
+        academicsList.className = 'academics-list';
+        
+        groupedAcademics[letter].forEach(academic => {
+            const academicItem = document.createElement('div');
+            academicItem.className = 'academic-item';
+            
+            const academicLink = document.createElement('a');
+            academicLink.textContent = academic.name;
+            academicLink.href = '#';
+            academicLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                displayAcademic(academic);
+                
+                // Switch to results view
+                hideAllSections();
+                document.getElementById('results-container').style.display = 'block';
+            });
+            
+            academicItem.appendChild(academicLink);
+            
+            // Add discipline tags if available
+            if (academic.taxonomies && academic.taxonomies.discipline) {
+                const tags = document.createElement('div');
+                tags.className = 'taxonomy-tags';
+                
+                academic.taxonomies.discipline.forEach(discipline => {
+                    const tag = document.createElement('span');
+                    tag.className = 'taxonomy-tag';
+                    tag.textContent = discipline;
+                    tags.appendChild(tag);
+                });
+                
+                academicItem.appendChild(tags);
+            }
+            
+            academicsList.appendChild(academicItem);
+        });
+        
+        letterSection.appendChild(academicsList);
+        databaseContent.appendChild(letterSection);
+    });
+}
+
+/**
+ * Load novelty tiles
+ */
+function loadNoveltyTiles() {
+    const noveltyContent = document.getElementById('novelty-tiles-content');
+    if (!noveltyContent) return;
+    
+    // Clear existing content
+    noveltyContent.innerHTML = '';
+    
+    // Check if database manager is available
+    if (typeof databaseManager === 'undefined') {
+        noveltyContent.innerHTML = '<div class="error-message">Database manager not available</div>';
+        return;
+    }
+    
+    // Get recent novelty tiles
+    const tiles = databaseManager.getRecentNoveltyTiles(20);
+    
+    if (!tiles || tiles.length === 0) {
+        noveltyContent.innerHTML = '<div class="info-message">No novelty tiles found</div>';
+        return;
+    }
+    
+    // Create novelty tiles
+    tiles.forEach(tile => {
+        const tileElement = document.createElement('div');
+        tileElement.className = 'novelty-tile';
+        
+        // Add type class if available
+        if (tile.type) {
+            tileElement.classList.add(`tile-type-${tile.type}`);
+        }
+        
+        const tileTitle = document.createElement('h3');
+        tileTitle.className = 'tile-title';
+        tileTitle.textContent = tile.title;
+        tileElement.appendChild(tileTitle);
+        
+        const tileContent = document.createElement('div');
+        tileContent.className = 'tile-content';
+        tileContent.textContent = tile.content;
+        tileElement.appendChild(tileContent);
+        
+        const tileDate = document.createElement('div');
+        tileDate.className = 'tile-date';
+        tileDate.textContent = new Date(tile.date).toLocaleDateString();
+        tileElement.appendChild(tileDate);
+        
+        noveltyContent.appendChild(tileElement);
+    });
+}
+
+/**
+ * Display academic profile
+ * @param {Object} academic - Academic object
+ */
+function displayAcademic(academic) {
+    const resultsContainer = document.getElementById('results-container');
+    if (!resultsContainer) return;
+    
+    const profileContainer = resultsContainer.querySelector('.academic-profile') || 
+                            document.createElement('div');
+    profileContainer.className = 'academic-profile';
+    profileContainer.innerHTML = '';
+    
+    // Create academic header
+    const header = document.createElement('div');
+    header.className = 'academic-header';
+    
+    const name = document.createElement('h2');
+    name.className = 'academic-name';
+    name.textContent = academic.name;
+    header.appendChild(name);
+    
+    // Add action buttons
+    const actionButtons = document.createElement('div');
+    actionButtons.className = 'action-buttons';
+    
+    // Favorite button
+    const favoriteButton = document.createElement('button');
+    favoriteButton.className = 'action-btn favorite-btn';
+    favoriteButton.innerHTML = '★';
+    favoriteButton.title = 'Add to favorites';
+    favoriteButton.addEventListener('click', () => {
+        if (typeof databaseManager !== 'undefined') {
+            const favorites = databaseManager.getFavorites();
+            if (favorites.includes(academic.name)) {
+                databaseManager.removeFromFavorites(academic.name);
+                favoriteButton.classList.remove('active');
+                favoriteButton.title = 'Add to favorites';
+            } else {
+                databaseManager.addToFavorites(academic.name);
+                favoriteButton.classList.add('active');
+                favoriteButton.title = 'Remove from favorites';
+            }
+        }
+    });
+    
+    // Check if already in favorites
+    if (typeof databaseManager !== 'undefined') {
+        const favorites = databaseManager.getFavorites();
+        if (favorites.includes(academic.name)) {
+            favoriteButton.classList.add('active');
+            favoriteButton.title = 'Remove from favorites';
+        }
+    }
+    
+    actionButtons.appendChild(favoriteButton);
+    
+    // Visualize button
+    const visualizeButton = document.createElement('button');
+    visualizeButton.className = 'action-btn visualize-btn';
+    visualizeButton.innerHTML = '◉';
+    visualizeButton.title = 'Visualize connections';
+    visualizeButton.addEventListener('click', () => {
+        visualizeAcademic(academic);
+    });
+    actionButtons.appendChild(visualizeButton);
+    
+    header.appendChild(actionButtons);
+    profileContainer.appendChild(header);
+    
+    // Add bio
+    if (academic.bio) {
+        const bio = document.createElement('div');
+        bio.className = 'academic-bio';
+        bio.textContent = academic.bio;
+        profileContainer.appendChild(bio);
+    }
+    
+    // Add taxonomies
+    if (academic.taxonomies && Object.keys(academic.taxonomies).length > 0) {
+        const taxonomies = document.createElement('div');
+        taxonomies.className = 'academic-taxonomies';
+        
+        for (const [category, values] of Object.entries(academic.taxonomies)) {
+            if (values && values.length > 0) {
+                const taxonomyCategory = document.createElement('div');
+                taxonomyCategory.className = 'taxonomy-category';
+                
+                const categoryLabel = document.createElement('span');
+                categoryLabel.className = 'category-label';
+                categoryLabel.textContent = category.charAt(0).toUpperCase() + category.slice(1) + ':';
+                taxonomyCategory.appendChild(categoryLabel);
+                
+                const categoryValues = document.createElement('div');
+                categoryValues.className = 'category-values';
+                
+                values.forEach(value => {
+                    const valueTag = document.createElement('span');
+                    valueTag.className = 'taxonomy-value';
+                    valueTag.textContent = value;
+                    valueTag.addEventListener('click', () => {
+                        const criteria = {};
+                        criteria[category] = value;
+                        searchByTaxonomy(criteria);
+                    });
+                    categoryValues.appendChild(valueTag);
+                });
+                
+                taxonomyCategory.appendChild(categoryValues);
+                taxonomies.appendChild(taxonomyCategory);
+            }
+        }
+        
+        profileContainer.appendChild(taxonomies);
+    }
+    
+    // Add papers
+    if (academic.papers && academic.papers.length > 0) {
+        const papersSection = document.createElement('div');
+        papersSection.className = 'academic-section';
+        
+        const papersHeader = document.createElement('h3');
+        papersHeader.textContent = 'Papers';
+        papersSection.appendChild(papersHeader);
+        
+        const papersList = document.createElement('ul');
+        papersList.className = 'papers-list';
+        
+        // Sort papers by year (descending)
+        const sortedPapers = [...academic.papers].sort((a, b) => b.year - a.year);
+        
+        sortedPapers.forEach(paper => {
+            const paperItem = document.createElement('li');
+            paperItem.className = 'paper-item';
+            
+            let paperText = paper.title;
+            if (paper.year) {
+                paperText += ` (${paper.year})`;
+            }
+            
+            if (paper.coauthors && paper.coauthors.length > 0) {
+                paperText += ` with ${paper.coauthors.join(', ')}`;
+            }
+            
+            paperItem.textContent = paperText;
+            papersList.appendChild(paperItem);
+        });
+        
+        papersSection.appendChild(papersList);
+        profileContainer.appendChild(papersSection);
+    }
+    
+    // Add events
+    if (academic.events && academic.events.length > 0) {
+        const eventsSection = document.createElement('div');
+        eventsSection.className = 'academic-section';
+        
+        const eventsHeader = document.createElement('h3');
+        eventsHeader.textContent = 'Events';
+        eventsSection.appendChild(eventsHeader);
+        
+        const eventsList = document.createElement('ul');
+        eventsList.className = 'events-list';
+        
+        // Sort events by year (descending)
+        const sortedEvents = [...academic.events].sort((a, b) => b.year - a.year);
+        
+        sortedEvents.forEach(event => {
+            const eventItem = document.createElement('li');
+            eventItem.className = 'event-item';
+            
+            let eventText = event.title;
+            if (event.year) {
+                eventText += ` (${event.year})`;
+            }
+            
+            if (event.location) {
+                eventText += `, ${event.location}`;
+            }
+            
+            eventItem.textContent = eventText;
+            eventsList.appendChild(eventItem);
+        });
+        
+        eventsSection.appendChild(eventsList);
+        profileContainer.appendChild(eventsSection);
+    }
+    
+    // Add connections
+    if (academic.connections && academic.connections.length > 0) {
+        const connectionsSection = document.createElement('div');
+        connectionsSection.className = 'academic-section';
+        
+        const connectionsHeader = document.createElement('h3');
+        connectionsHeader.textContent = 'Connections';
+        connectionsSection.appendChild(connectionsHeader);
+        
+        const connectionsList = document.createElement('div');
+        connectionsList.className = 'connections-list';
+        
+        // Sort connections alphabetically
+        const sortedConnections = [...academic.connections].sort();
+        
+        sortedConnections.forEach(connection => {
+            const connectionItem = document.createElement('span');
+            connectionItem.className = 'connection-item';
+            connectionItem.textContent = connection;
+            connectionItem.addEventListener('click', () => {
+                const connectedAcademic = databaseManager.getAcademic(connection);
+                if (connectedAcademic) {
+                    displayAcademic(connectedAcademic);
+                } else {
+                    displayErrorMessage(`Academic not found: ${connection}`, 'database');
+                }
+            });
+            connectionsList.appendChild(connectionItem);
+        });
+        
+        connectionsSection.appendChild(connectionsList);
+        profileContainer.appendChild(connectionsSection);
+    }
+    
+    // Append the profile container to the results container
+    if (!resultsContainer.querySelector('.academic-profile')) {
+        resultsContainer.appendChild(profileContainer);
+    }
+}
+
+/**
+ * Search by taxonomy criteria
+ * @param {Object} criteria - Taxonomy criteria
+ */
+function searchByTaxonomy(criteria) {
+    if (typeof databaseManager === 'undefined') {
+        displayErrorMessage('Database manager not available', 'database');
+        return;
+    }
+    
+    // Search for academics matching the criteria
+    const results = databaseManager.searchAcademics(criteria);
+    
+    if (!results || results.length === 0) {
+        displayErrorMessage(`No academics found matching the criteria`, 'database');
+        return;
+    }
+    
+    // Display the first result
+    displayAcademic(results[0]);
+    
+    // Show all results if there are multiple
+    if (results.length > 1) {
+        const resultsContainer = document.getElementById('results-container');
+        if (resultsContainer) {
+            let relatedContainer = resultsContainer.querySelector('.related-academics');
+            
+            if (!relatedContainer) {
+                relatedContainer = document.createElement('div');
+                relatedContainer.className = 'related-academics';
+                resultsContainer.appendChild(relatedContainer);
+            }
+            
+            relatedContainer.innerHTML = '';
+            
+            const header = document.createElement('h3');
+            header.textContent = `Related Academics (${results.length})`;
+            relatedContainer.appendChild(header);
+            
+            const relatedList = document.createElement('div');
+            relatedList.className = 'related-list';
+            
+            results.slice(1).forEach(academic => {
+                const relatedItem = document.createElement('div');
+                relatedItem.className = 'related-item';
+                relatedItem.textContent = academic.name;
+                relatedItem.addEventListener('click', () => {
+                    displayAcademic(academic);
+                });
+                relatedList.appendChild(relatedItem);
+            });
+            
+            relatedContainer.appendChild(relatedList);
+        }
+    }
+    
+    // Switch to results view
+    hideAllSections();
+    document.getElementById('results-container').style.display = 'block';
+}
+
+/**
+ * Visualize an academic's connections
+ * @param {Object} academic - Academic object
+ */
+function visualizeAcademic(academic) {
+    // Ensure there's a visualization container
+    const visualizationContainer = document.getElementById('visualization-container');
+    if (!visualizationContainer) return;
+    
+    // Show the container
+    visualizationContainer.style.display = 'block';
+    
+    // Check if D3 is available
+    if (typeof d3 === 'undefined') {
+        visualizationContainer.innerHTML = '<div class="error-message">D3.js is required for visualization but is not loaded</div>';
+        return;
+    }
+    
+    // Clear the container
+    visualizationContainer.innerHTML = '';
+    
+    // Add a close button
+    const closeButton = document.createElement('button');
+    closeButton.className = 'close-visualization-btn';
+    closeButton.textContent = '×';
+    closeButton.title = 'Close visualization';
+    closeButton.addEventListener('click', () => {
+        visualizationContainer.style.display = 'none';
+    });
+    visualizationContainer.appendChild(closeButton);
+    
+    // Add a visualization title
+    const title = document.createElement('h3');
+    title.className = 'visualization-title';
+    title.textContent = `Network: ${academic.name}`;
+    visualizationContainer.appendChild(title);
+    
+    // Create SVG container for the visualization
+    const width = visualizationContainer.clientWidth;
+    const height = 500;
+    
+    const svg = d3.select(visualizationContainer)
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height)
+        .attr('viewBox', [0, 0, width, height]);
+    
+    // Collect all nodes and links
+    const nodes = [];
+    const links = [];
+    
+    // Add the main academic as the central node
+    nodes.push({
+        id: academic.name,
+        group: 'main'
+    });
+    
+    // Add direct connections
+    if (academic.connections) {
+        academic.connections.forEach(connection => {
+            nodes.push({
+                id: connection,
+                group: 'connection'
+            });
+            
+            links.push({
+                source: academic.name,
+                target: connection,
+                value: 1
+            });
+        });
+    }
+    
+    // Add secondary connections if they're in the database
+    if (typeof databaseManager !== 'undefined') {
+        // Find academics that list this academic as a connection
+        const connectedAcademics = databaseManager.getAcademicsByConnection(academic.name);
+        
+        connectedAcademics.forEach(connectedAcademic => {
+            if (!academic.connections || !academic.connections.includes(connectedAcademic.name)) {
+                nodes.push({
+                    id: connectedAcademic.name,
+                    group: 'reverse-connection'
+                });
+                
+                links.push({
+                    source: connectedAcademic.name,
+                    target: academic.name,
+                    value: 1
+                });
+            }
+        });
+    }
+    
+    // Set up force simulation
+    const simulation = d3.forceSimulation(nodes)
+        .force('link', d3.forceLink(links).id(d => d.id).distance(100))
+        .force('charge', d3.forceManyBody().strength(-300))
+        .force('center', d3.forceCenter(width / 2, height / 2))
+        .force('collision', d3.forceCollide().radius(30));
+    
+    // Create links
+    const link = svg.append('g')
+        .attr('stroke', '#999')
+        .attr('stroke-opacity', 0.6)
+        .selectAll('line')
+        .data(links)
+        .join('line')
+        .attr('stroke-width', d => Math.sqrt(d.value));
+    
+    // Create nodes with different colors for main, connections, and reverse connections
+    const node = svg.append('g')
+        .selectAll('circle')
+        .data(nodes)
+        .join('circle')
+        .attr('r', d => d.group === 'main' ? 10 : 5)
+        .attr('fill', d => {
+            if (d.group === 'main') return '#ff0';
+            if (d.group === 'connection') return '#0f0';
+            return '#09f';
+        })
+        .call(drag(simulation));
+    
+    // Add node labels
+    const text = svg.append('g')
+        .selectAll('text')
+        .data(nodes)
+        .join('text')
+        .text(d => d.id)
+        .attr('font-size', 10)
+        .attr('dx', 8)
+        .attr('dy', 3)
+        .style('pointer-events', 'none')
+        .style('fill', '#ddd')
+        .style('font-family', 'monospace')
+        .style('font-weight', d => d.group === 'main' ? 'bold' : 'normal')
+        .style('opacity', d => d.group === 'main' ? 1 : 0.7);
+    
+    // Add click event to nodes to navigate to that academic
+    node.on('click', function(event, d) {
+        if (d.group !== 'main') {
+            const connectedAcademic = databaseManager.getAcademic(d.id);
+            if (connectedAcademic) {
+                displayAcademic(connectedAcademic);
+            } else {
+                // Try to search for the academic
+                handleSearch(d.id);
+            }
+        }
+    });
+    
+    // Add title to nodes for tooltip
+    node.append('title')
+        .text(d => d.id);
+    
+    // Set up simulation tick function
+    simulation.on('tick', () => {
+        link
+            .attr('x1', d => d.source.x)
+            .attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x)
+            .attr('y2', d => d.target.y);
+        
+        node
+            .attr('cx', d => d.x)
+            .attr('cy', d => d.y);
+            
+        text
+            .attr('x', d => d.x)
+            .attr('y', d => d.y);
+    });
+    
+    // Drag function for nodes
+    function drag(simulation) {
+        function dragstarted(event) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            event.subject.fx = event.subject.x;
+            event.subject.fy = event.subject.y;
+        }
+        
+        function dragged(event) {
+            event.subject.fx = event.x;
+            event.subject.fy = event.y;
+        }
+        
+        function dragended(event) {
+            if (!event.active) simulation.alphaTarget(0);
+            event.subject.fx = null;
+            event.subject.fy = null;
+        }
+        
+        return d3.drag()
+            .on('start', dragstarted)
+            .on('drag', dragged)
+            .on('end', dragended);
+    }
+    
+    // Add legend
+    const legend = svg.append('g')
+        .attr('font-family', 'monospace')
+        .attr('font-size', 10)
+        .attr('text-anchor', 'start')
+        .selectAll('g')
+        .data([
+            { label: 'Selected Academic', color: '#ff0' },
+            { label: 'Direct Connection', color: '#0f0' },
+            { label: 'References Selected', color: '#09f' }
+        ])
+        .join('g')
+        .attr('transform', (d, i) => `translate(10,${i * 20 + 10})`);
+        
+    legend.append('rect')
+        .attr('x', 0)
+        .attr('width', 15)
+        .attr('height', 15)
+        .attr('fill', d => d.color);
+        
+    legend.append('text')
+        .attr('x', 20)
+        .attr('y', 7.5)
+        .attr('dy', '0.32em')
+        .text(d => d.label)
+        .style('fill', '#ddd');
 }
 
 /**
@@ -143,6 +1254,28 @@ function saveSearchHistory() {
     }
 }
 
+function updateCommandHistoryDisplay() {
+    const historyList = document.querySelector('.command-history-list');
+    if (!historyList) return;
+    
+    historyList.innerHTML = '';
+    
+    // Show the 10 most recent commands
+    commandHistory.slice(-10).reverse().forEach(command => {
+        const historyItem = document.createElement('div');
+        historyItem.className = 'history-item';
+        historyItem.textContent = command;
+        historyItem.addEventListener('click', () => {
+            const searchBox = document.querySelector('.search-box');
+            if (searchBox) {
+                searchBox.value = command;
+                searchBox.focus();
+            }
+        });
+        historyList.appendChild(historyItem);
+    });
+}
+
 /**
  * Update search functionality to save history
  */
@@ -162,9 +1295,6 @@ window.handleSearch = function(query) {
         // Save search history
         saveSearchHistory();
     }
-    
-    // Rest of the existing handleSearch function...
-    console.log(`Searching for: "${query}"`);
     
     // Show search status
     const searchStatus = document.querySelector('.search-status');
@@ -287,7 +1417,55 @@ function setupSearchListeners() {
         }
     }, 300));
     
-    // Rest of the existing setup function...
+    // Handle form submission
+    const searchForm = document.querySelector('#search-form');
+    if (searchForm) {
+        searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const query = searchBox.value.trim();
+            if (query) {
+                handleSearch(query);
+                suggestionsContainer.innerHTML = '';
+            }
+        });
+    }
+    
+    // Handle keyboard navigation for command history
+    searchBox.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (commandHistory.length > 0) {
+                if (historyIndex === -1) {
+                    historyIndex = commandHistory.length - 1;
+                } else if (historyIndex > 0) {
+                    historyIndex--;
+                }
+                searchBox.value = commandHistory[historyIndex];
+            }
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (historyIndex !== -1) {
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    searchBox.value = commandHistory[historyIndex];
+                } else {
+                    historyIndex = -1;
+                    searchBox.value = '';
+                }
+            }
+        } else if (e.key === 'Escape') {
+            suggestionsContainer.innerHTML = '';
+        }
+    });
+}
+
+/**
+ * Initialize network visualization
+ */
+function initializeNetworkVisualization() {
+    // This will be used by the visualizeAcademic function
+    // Make sure the D3.js library is loaded in index.html
+    console.log('Network visualization initialized');
 }
 
 /**
@@ -317,59 +1495,4 @@ function checkAdminAccess() {
         // Store admin flag in localStorage for persistence
         localStorage.setItem('killphilosophy_admin', 'true');
     }
-}
-
-/**
- * Admin navigation handler
- */
-function navAdminHandler() {
-    showGlitchEffect();
-    hideAllSections();
-    document.getElementById('admin-container').style.display = 'block';
-    setActiveNavItem('nav-admin');
-}
-
-// Make sure the logo works correctly as a home button
-function initializeLogoAnimation() {
-    const mainLogo = document.getElementById('main-logo');
-    if (!mainLogo) return;
-    
-    mainLogo.addEventListener('click', () => {
-        console.log('Logo clicked, returning to home view');
-        
-        // Reset to home view
-        hideAllSections();
-        document.getElementById('search-container').style.display = 'block';
-        setActiveNavItem('nav-search');
-        
-        // Focus the search box
-        const searchBox = document.querySelector('.search-box');
-        if (searchBox) {
-            searchBox.focus();
-        }
-        
-        // Add animation class
-        mainLogo.classList.add('animated');
-        
-        // Remove animation class after animation completes
-        setTimeout(() => {
-            mainLogo.classList.remove('animated');
-        }, 2000);
-        
-        // Show glitch effect
-        showGlitchEffect();
-    });
-}
-
-// Update event listener setup
-function setupEventListeners() {
-    // Navigation event listeners
-    document.getElementById('nav-search').addEventListener('click', navSearchHandler);
-    document.getElementById('nav-novelty-tiles').addEventListener('click', navNoveltyHandler);
-    document.getElementById('nav-database').addEventListener('click', navDatabaseHandler);
-    document.getElementById('nav-deep-search').addEventListener('click', navDeepSearchHandler);
-    document.getElementById('nav-about').addEventListener('click', navAboutHandler);
-    document.getElementById('nav-contribute').addEventListener('click', navContributeHandler);
-    
-    // Rest of the existing setup function...
 }
