@@ -144,8 +144,42 @@ class GitHubManager {
             return this.contributors;
         } catch (error) {
             console.error('Error fetching contributors:', error);
-            return this.contributors; // Return cached data on error
+            
+            // If using the actual repo fails, generate mock data
+            if (this.contributors.length === 0) {
+                this._generateMockContributors();
+            }
+            
+            return this.contributors; // Return cached or mock data on error
         }
+    }
+    
+    /**
+     * Generate mock contributors data for demo purposes
+     */
+    _generateMockContributors() {
+        const mockContributors = [
+            {
+                username: 'academic_explorer',
+                avatar: 'https://gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y',
+                contributions: 47,
+                url: 'https://github.com/killphilosophy'
+            },
+            {
+                username: 'critical_theorist',
+                avatar: 'https://gravatar.com/avatar/11111111111111111111111111111111?d=mp&f=y',
+                contributions: 35,
+                url: 'https://github.com/killphilosophy'
+            },
+            {
+                username: 'philosophy_coder',
+                avatar: 'https://gravatar.com/avatar/22222222222222222222222222222222?d=mp&f=y',
+                contributions: 23,
+                url: 'https://github.com/killphilosophy'
+            }
+        ];
+        
+        this.contributors = mockContributors;
     }
     
     /**
@@ -185,8 +219,29 @@ class GitHubManager {
             return this.lastCommit;
         } catch (error) {
             console.error('Error fetching last commit:', error);
-            return this.lastCommit; // Return cached data on error
+            
+            // If using the actual repo fails, generate mock data
+            if (!this.lastCommit) {
+                this._generateMockLastCommit();
+            }
+            
+            return this.lastCommit; // Return cached or mock data on error
         }
+    }
+    
+    /**
+     * Generate mock last commit data for demo purposes
+     */
+    _generateMockLastCommit() {
+        const now = new Date();
+        
+        this.lastCommit = {
+            sha: '1234567890abcdef1234567890abcdef12345678',
+            message: 'Update academic database with new connections',
+            author: 'academic_explorer',
+            date: now.toISOString(),
+            url: 'https://github.com/killphilosophy/academic-database/commit/1234567890abcdef1234567890abcdef12345678'
+        };
     }
     
     /**
@@ -221,14 +276,40 @@ class GitHubManager {
             return this.repoStats;
         } catch (error) {
             console.error('Error fetching repo stats:', error);
-            return this.repoStats; // Return cached data on error
+            
+            // If using the actual repo fails, generate mock data
+            if (this.repoStats.stars === 0 && this.repoStats.forks === 0) {
+                this._generateMockRepoStats();
+            }
+            
+            return this.repoStats; // Return cached or mock data on error
         }
+    }
+    
+    /**
+     * Generate mock repository statistics for demo purposes
+     */
+    _generateMockRepoStats() {
+        this.repoStats = {
+            stars: 42,
+            forks: 15,
+            openIssues: 7
+        };
     }
     
     /**
      * Update the GitHub UI elements with the fetched data
      */
     updateGitHubUI() {
+        // Update stats
+        const githubStars = document.getElementById('github-stars');
+        const githubForks = document.getElementById('github-forks');
+        const githubIssues = document.getElementById('github-issues');
+        
+        if (githubStars) githubStars.textContent = this.repoStats.stars;
+        if (githubForks) githubForks.textContent = this.repoStats.forks;
+        if (githubIssues) githubIssues.textContent = this.repoStats.openIssues;
+        
         // Contributors section
         const contributorsContainer = document.getElementById('github-contributors');
         if (contributorsContainer) {
@@ -275,25 +356,6 @@ class GitHubManager {
         } else if (lastCommitContainer) {
             lastCommitContainer.innerHTML = '<div class="empty-list">No commit data available</div>';
         }
-        
-        // Repository stats section
-        const statsContainer = document.getElementById('github-stats');
-        if (statsContainer) {
-            statsContainer.innerHTML = `
-                <div class="stat-item">
-                    <div class="stat-value">${this.repoStats.stars}</div>
-                    <div class="stat-label">Stars</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">${this.repoStats.forks}</div>
-                    <div class="stat-label">Forks</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">${this.repoStats.openIssues}</div>
-                    <div class="stat-label">Open Issues</div>
-                </div>
-            `;
-        }
     }
     
     /**
@@ -313,11 +375,52 @@ class GitHubManager {
             // Simulate API delay
             await new Promise(resolve => setTimeout(resolve, 1500));
             
+            // Increase open issues count
+            this.repoStats.openIssues++;
+            this._saveToCache();
+            
+            // Update UI
+            const githubIssues = document.getElementById('github-issues');
+            if (githubIssues) {
+                githubIssues.textContent = this.repoStats.openIssues;
+            }
+            
             console.log('Issue submitted successfully');
             return true;
         } catch (error) {
             console.error('Error submitting issue:', error);
             return false;
+        }
+    }
+    
+    /**
+     * Submit a contribution to the repository as a pull request
+     */
+    async submitContribution(data, type, description) {
+        try {
+            // In a real implementation, this would fork the repo, create a branch, add changes, and submit a PR
+            console.log('Submitting contribution:', { data, type, description });
+            
+            // Simulate API delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Create a mock PR response
+            const prNumber = Math.floor(Math.random() * 100) + 1;
+            const prUrl = `https://github.com/${this.username}/${this.repoName}/pull/${prNumber}`;
+            
+            console.log('Contribution submitted as PR #', prNumber);
+            return {
+                success: true,
+                prNumber,
+                prUrl,
+                message: `Contribution submitted as pull request #${prNumber}`
+            };
+        } catch (error) {
+            console.error('Error submitting contribution:', error);
+            return {
+                success: false,
+                message: 'Failed to submit contribution. Please try again later.'
+            };
         }
     }
 }
@@ -385,11 +488,20 @@ function setupGitHubEventListeners() {
             const success = await githubManager.submitIssue(title, body);
             
             if (success) {
-                alert('Issue submitted successfully!');
+                // If we have a toast function, use it, otherwise use alert
+                if (typeof showToast === 'function') {
+                    showToast('Success', 'Issue submitted successfully!', 'success');
+                } else {
+                    alert('Issue submitted successfully!');
+                }
                 titleInput.value = '';
                 bodyInput.value = '';
             } else {
-                alert('Failed to submit issue. Please try again later.');
+                if (typeof showToast === 'function') {
+                    showToast('Error', 'Failed to submit issue. Please try again later.', 'error');
+                } else {
+                    alert('Failed to submit issue. Please try again later.');
+                }
             }
             
             // Reset button state
@@ -414,14 +526,49 @@ function setupGitHubEventListeners() {
                 
                 githubManager.updateGitHubUI();
                 
-                alert('GitHub data refreshed!');
+                if (typeof showToast === 'function') {
+                    showToast('Success', 'GitHub data refreshed!', 'success');
+                } else {
+                    alert('GitHub data refreshed!');
+                }
             } catch (error) {
                 console.error('Error refreshing GitHub data:', error);
-                alert('Failed to refresh GitHub data. Please try again later.');
+                
+                if (typeof showToast === 'function') {
+                    showToast('Error', 'Failed to refresh GitHub data. Please try again later.', 'error');
+                } else {
+                    alert('Failed to refresh GitHub data. Please try again later.');
+                }
             }
             
             refreshGitHubButton.disabled = false;
             refreshGitHubButton.textContent = 'Refresh Data';
+        });
+    }
+    
+    // Close about modal
+    const closeAboutModal = document.getElementById('close-about-modal');
+    const aboutModal = document.getElementById('about-modal');
+    
+    if (closeAboutModal && aboutModal) {
+        closeAboutModal.addEventListener('click', () => {
+            // If we have a closeModal function, use it, otherwise just hide the modal
+            if (typeof closeModal === 'function') {
+                closeModal(aboutModal);
+            } else {
+                aboutModal.style.display = 'none';
+            }
+        });
+        
+        // Close modal when clicking outside content
+        aboutModal.addEventListener('click', (e) => {
+            if (e.target === aboutModal) {
+                if (typeof closeModal === 'function') {
+                    closeModal(aboutModal);
+                } else {
+                    aboutModal.style.display = 'none';
+                }
+            }
         });
     }
 }
