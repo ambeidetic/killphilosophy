@@ -1,207 +1,505 @@
 // Main application script for KillPhilosophy
 
-// Modified function to populate the novelty tiles for the new grid-based layout
-function populateNoveltyTiles() {
-    const tilesContainer = document.getElementById('novelty-tiles');
-    if (!tilesContainer) {
-        console.error('Novelty tiles container not found');
-        return;
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Initializing KillPhilosophy application...');
+    
+    // Initialize database
+    initializeDatabase();
+    
+    // Setup event listeners
+    setupEventListeners();
+    
+    // Set Search as the default and only visible view
+    hideAllSections();
+    setActiveNavItem('nav-search');
+    document.getElementById('search-container').style.display = 'block';
+    
+    // Hide all navigation items except Search
+    hideNonSearchNavItems();
+});
+
+/**
+ * Initialize the database with academic data
+ */
+function initializeDatabase() {
+    console.log('Initializing database...');
+    
+    // This ensures databaseManager exists and is populated
+    if (typeof databaseManager !== 'undefined') {
+        console.log(`Database initialized with ${Object.keys(databaseManager.academics).length} academics.`);
+    } else {
+        console.error('Database manager not found. Ensure database.js is loaded properly.');
+    }
+}
+
+/**
+ * Set up all event listeners for the application
+ */
+function setupEventListeners() {
+    // Navigation event listeners
+    document.getElementById('nav-search').addEventListener('click', navSearchHandler);
+    
+    // Search box event listener
+    const searchBox = document.querySelector('.search-box');
+    if (searchBox) {
+        searchBox.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleSearch(searchBox.value);
+            }
+        });
     }
     
-    tilesContainer.innerHTML = '';
-    
-    let tiles = databaseManager.getNoveltyTiles();
-    
-    // Sort tiles by date (newest first)
-    tiles = tiles.sort((a, b) => {
-        return new Date(b.date) - new Date(a.date);
+    // Academic profile event listeners (for when search results are clicked)
+    setupAcademicProfileListeners();
+}
+
+/**
+ * Hide all navigation items except Search
+ */
+function hideNonSearchNavItems() {
+    const navItems = document.querySelectorAll('nav a:not(#nav-search)');
+    navItems.forEach(item => {
+        item.style.display = 'none';
+    });
+}
+
+/**
+ * Set the active navigation item
+ */
+function setActiveNavItem(id) {
+    // Remove active class from all nav items
+    document.querySelectorAll('nav a').forEach(item => {
+        item.classList.remove('active');
     });
     
-    if (tiles.length === 0) {
-        // Generate some placeholder tiles if none exist
-        for (let i = 0; i < 20; i++) {
-            const placeholderTile = generatePlaceholderTile();
-            databaseManager.addNoveltyTile(placeholderTile);
+    // Add active class to selected nav item
+    const navItem = document.getElementById(id);
+    if (navItem) {
+        navItem.classList.add('active');
+    }
+}
+
+/**
+ * Hide all main content sections
+ */
+function hideAllSections() {
+    const sections = [
+        'search-container',
+        'academic-profile',
+        'database-browser',
+        'novelty-tiles-container',
+        'deep-search-container',
+        'admin-container',
+        'github-status-panel'
+    ];
+    
+    sections.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.style.display = 'none';
         }
-        tiles = databaseManager.getNoveltyTiles();
+    });
+}
+
+/**
+ * Handle the search function
+ */
+function handleSearch(query) {
+    if (!query || query.trim() === '') {
+        return; // Empty query, do nothing
     }
     
-    // For grid-like perception layout, we want to ensure a minimum number of tiles
-    // Add duplicates or generate random placeholder tiles if needed to fill the grid
-    const minimumTiles = 32; // Makes a dense grid for eye-like perception
+    console.log(`Searching for: "${query}"`);
     
-    if (tiles.length < minimumTiles) {
-        const extraTiles = [];
-        
-        for (let i = tiles.length; i < minimumTiles; i++) {
-            // Either duplicate an existing tile or generate a placeholder
-            if (tiles.length > 0 && Math.random() > 0.5) {
-                const randomTile = tiles[Math.floor(Math.random() * tiles.length)];
-                extraTiles.push({...randomTile, id: Date.now() + i});
-            } else {
-                extraTiles.push(generatePlaceholderTile());
-            }
-        }
-        
-        // Add the extra tiles to the list for display
-        tiles = [...tiles, ...extraTiles];
+    // Show search status
+    const searchStatus = document.querySelector('.search-status');
+    if (searchStatus) {
+        searchStatus.style.display = 'block';
+        document.querySelector('.search-status-text').textContent = `Searching for "${query}"...`;
     }
     
-    // Shuffle the tiles for a more randomized, eye-like perception
-    tiles = shuffleArray(tiles);
-    
-    tiles.forEach(tile => {
-        const tileElement = document.createElement('div');
-        tileElement.className = 'novelty-tile';
-        
-        let academicsHtml = '';
-        if (tile.academics && tile.academics.length > 0) {
-            for (let i = 0; i < tile.academics.length; i++) {
-                academicsHtml += '<span class="novelty-academic">' + tile.academics[i] + '</span>';
-                if (i < tile.academics.length - 1) {
-                    academicsHtml += ' • ';
-                }
-            }
-        } else {
-            academicsHtml = '<span class="novelty-academic">Unknown</span>';
-        }
-        
-        // Enhanced tile HTML with improved formatting and details
-        tileElement.innerHTML = `
-            <div class="novelty-tile-header">
-                <div class="novelty-tile-title">${tile.title}</div>
-                <div class="novelty-tile-date">${formatDate(tile.date)}</div>
-            </div>
-            <div class="novelty-academics">${academicsHtml}</div>
-            <div class="novelty-description">${tile.description}</div>
-            <div class="novelty-tile-footer">Click to explore</div>
-        `;
-        
-        // Add click event to view the first academic in the tile
-        tileElement.addEventListener('click', () => {
-            if (!tile.academics || tile.academics.length === 0) return;
-            
-            const firstAcademic = tile.academics[0];
-            const academic = databaseManager.getAcademic(firstAcademic);
+    // Simulate search delay for effect (matches the retro aesthetic)
+    setTimeout(() => {
+        // Search the database
+        if (typeof databaseManager !== 'undefined') {
+            const academic = databaseManager.getAcademic(query);
             
             if (academic) {
-                // Display the academic
+                // Academic found - display profile
                 displayAcademic(academic);
-                if (searchBox) {
-                    searchBox.value = firstAcademic;
+                
+                // Hide search status
+                if (searchStatus) {
+                    searchStatus.style.display = 'none';
                 }
                 
                 // Switch to academic profile view
                 hideAllSections();
                 document.getElementById('academic-profile').style.display = 'block';
             } else {
-                // Switch to search view and search for the academic
-                setActiveNavItem('nav-search');
-                navSearchHandler();
+                // No direct match, try a broader search
+                const results = databaseManager.searchAcademics({ name: query });
                 
-                if (searchBox) {
-                    searchBox.value = firstAcademic;
-                    handleSearch(firstAcademic);
+                if (results && results.length > 0) {
+                    // Matches found - display first result
+                    displayAcademic(results[0]);
+                    
+                    // Hide search status
+                    if (searchStatus) {
+                        searchStatus.style.display = 'none';
+                    }
+                    
+                    // Switch to academic profile view
+                    hideAllSections();
+                    document.getElementById('academic-profile').style.display = 'block';
+                } else {
+                    // No matches found
+                    if (searchStatus) {
+                        searchStatus.style.display = 'block';
+                        document.querySelector('.search-status-text').textContent = `No results found for "${query}"`;
+                    }
                 }
             }
-        });
+        } else {
+            // Database not available
+            if (searchStatus) {
+                searchStatus.style.display = 'block';
+                document.querySelector('.search-status-text').textContent = 'Database not available. Please try again later.';
+            }
+        }
+    }, 800); // 800ms delay for retro terminal effect
+}
+
+/**
+ * Display academic profile
+ */
+function displayAcademic(academic) {
+    console.log('Displaying academic profile:', academic.name);
+    
+    // Set name
+    const nameElement = document.getElementById('academic-name');
+    if (nameElement) {
+        nameElement.textContent = academic.name;
+    }
+    
+    // Set bio
+    const bioElement = document.getElementById('academic-bio');
+    if (bioElement) {
+        bioElement.textContent = academic.bio;
+    }
+    
+    // Set taxonomies
+    const taxonomiesContainer = document.getElementById('taxonomies-list');
+    if (taxonomiesContainer) {
+        taxonomiesContainer.innerHTML = '';
         
-        tilesContainer.appendChild(tileElement);
+        if (academic.taxonomies) {
+            for (const category in academic.taxonomies) {
+                const values = academic.taxonomies[category];
+                values.forEach(value => {
+                    const tag = document.createElement('div');
+                    tag.className = 'taxonomy-tag';
+                    tag.textContent = `${category}: ${value}`;
+                    taxonomiesContainer.appendChild(tag);
+                });
+            }
+        }
+    }
+    
+    // Set papers
+    const papersContainer = document.getElementById('papers-list');
+    if (papersContainer) {
+        papersContainer.innerHTML = '';
+        
+        if (academic.papers && academic.papers.length > 0) {
+            academic.papers.forEach(paper => {
+                const paperElement = document.createElement('div');
+                paperElement.className = 'paper-item';
+                
+                const title = document.createElement('div');
+                title.className = 'paper-title';
+                title.textContent = paper.title;
+                
+                const metadata = document.createElement('div');
+                metadata.className = 'paper-metadata';
+                metadata.textContent = `Year: ${paper.year}`;
+                
+                if (paper.coauthors && paper.coauthors.length > 0) {
+                    metadata.textContent += ` | Coauthors: ${paper.coauthors.join(', ')}`;
+                }
+                
+                paperElement.appendChild(title);
+                paperElement.appendChild(metadata);
+                papersContainer.appendChild(paperElement);
+            });
+        } else {
+            papersContainer.innerHTML = '<div class="empty-list">No papers listed</div>';
+        }
+    }
+    
+    // Set events
+    const eventsContainer = document.getElementById('events-list');
+    if (eventsContainer) {
+        eventsContainer.innerHTML = '';
+        
+        if (academic.events && academic.events.length > 0) {
+            academic.events.forEach(event => {
+                const eventElement = document.createElement('div');
+                eventElement.className = 'event-item';
+                
+                const title = document.createElement('div');
+                title.className = 'event-title';
+                title.textContent = event.title;
+                
+                const metadata = document.createElement('div');
+                metadata.className = 'event-metadata';
+                metadata.textContent = `Year: ${event.year}`;
+                
+                if (event.location) {
+                    metadata.textContent += ` | Location: ${event.location}`;
+                }
+                
+                eventElement.appendChild(title);
+                eventElement.appendChild(metadata);
+                eventsContainer.appendChild(eventElement);
+            });
+        } else {
+            eventsContainer.innerHTML = '<div class="empty-list">No events listed</div>';
+        }
+    }
+    
+    // Set connections
+    const connectionsContainer = document.getElementById('connections-list');
+    if (connectionsContainer) {
+        connectionsContainer.innerHTML = '';
+        
+        if (academic.connections && academic.connections.length > 0) {
+            academic.connections.forEach(connection => {
+                const connectionElement = document.createElement('div');
+                connectionElement.className = 'connection-item';
+                
+                const name = document.createElement('div');
+                name.className = 'connection-name';
+                name.textContent = connection;
+                name.addEventListener('click', () => {
+                    const connectedAcademic = databaseManager.getAcademic(connection);
+                    if (connectedAcademic) {
+                        displayAcademic(connectedAcademic);
+                    }
+                });
+                
+                connectionElement.appendChild(name);
+                connectionsContainer.appendChild(connectionElement);
+            });
+        } else {
+            connectionsContainer.innerHTML = '<div class="empty-list">No connections listed</div>';
+        }
+    }
+    
+    // Add glitch effect when displaying profile
+    showGlitchEffect();
+}
+
+/**
+ * Set up event listeners for the academic profile
+ */
+function setupAcademicProfileListeners() {
+    // Add Information button
+    const addInfoBtn = document.getElementById('add-info-btn');
+    const addInfoForm = document.getElementById('add-info-form');
+    
+    if (addInfoBtn && addInfoForm) {
+        addInfoBtn.addEventListener('click', () => {
+            if (addInfoForm.style.display === 'block') {
+                addInfoForm.style.display = 'none';
+            } else {
+                addInfoForm.style.display = 'block';
+            }
+        });
+    }
+    
+    // Form type selector
+    const infoType = document.getElementById('info-type');
+    if (infoType) {
+        infoType.addEventListener('change', () => {
+            updateFormFields(infoType.value);
+        });
+    }
+    
+    // Submit button
+    const submitInfo = document.getElementById('submit-info');
+    if (submitInfo) {
+        submitInfo.addEventListener('click', handleInfoSubmission);
+    }
+}
+
+/**
+ * Update form fields based on selected information type
+ */
+function updateFormFields(type) {
+    // Hide all field groups
+    document.querySelectorAll('.paper-field, .event-field, .connection-field, .taxonomy-field').forEach(field => {
+        field.style.display = 'none';
     });
+    
+    // Show relevant fields based on type
+    if (type === 'paper') {
+        document.querySelectorAll('.paper-field').forEach(field => {
+            field.style.display = 'block';
+        });
+    } else if (type === 'event') {
+        document.querySelectorAll('.event-field').forEach(field => {
+            field.style.display = 'block';
+        });
+    } else if (type === 'connection') {
+        document.querySelectorAll('.connection-field').forEach(field => {
+            field.style.display = 'block';
+        });
+    } else if (type === 'taxonomy') {
+        document.querySelectorAll('.taxonomy-field').forEach(field => {
+            field.style.display = 'block';
+        });
+    }
+    
+    // Show GitHub fields if contribution is checked
+    const contributeCheckbox = document.getElementById('contribute-to-github');
+    if (contributeCheckbox && contributeCheckbox.checked) {
+        document.querySelector('.github-identity').style.display = 'block';
+    }
 }
 
 /**
- * Generate a placeholder tile for filling the grid
+ * Handle information submission
  */
-function generatePlaceholderTile() {
-    // Get random academics from the database
-    const academics = databaseManager.getAllAcademics();
-    const selectedAcademics = [];
-    
-    if (academics.length > 0) {
-        // Select 1-2 random academics
-        const numAcademics = Math.floor(Math.random() * 2) + 1;
-        for (let i = 0; i < numAcademics; i++) {
-            const randomIndex = Math.floor(Math.random() * academics.length);
-            selectedAcademics.push(academics[randomIndex].name);
-        }
-    } else {
-        // Fallback if no academics in database
-        const placeholderNames = ['Jacques Derrida', 'Michel Foucault', 'Judith Butler', 'Gilles Deleuze', 'Slavoj Žižek'];
-        const randomIndex = Math.floor(Math.random() * placeholderNames.length);
-        selectedAcademics.push(placeholderNames[randomIndex]);
+function handleInfoSubmission() {
+    // Get current academic name
+    const academicName = document.getElementById('academic-name').textContent;
+    if (!academicName) {
+        alert('No academic selected.');
+        return;
     }
     
-    // Generate random date (within last year)
-    const randomDate = new Date();
-    randomDate.setDate(randomDate.getDate() - Math.floor(Math.random() * 365));
-    const formattedDate = `${randomDate.getFullYear()}-${String(randomDate.getMonth() + 1).padStart(2, '0')}-${String(randomDate.getDate()).padStart(2, '0')}`;
+    // Get info type
+    const infoType = document.getElementById('info-type').value;
+    let infoData = {};
     
-    // Random tile types
-    const tileTypes = [
-        {
-            type: 'lecture',
-            title: 'Recently discovered lecture on',
-            description: 'A digitized recording of a previously unknown lecture discussing'
-        },
-        {
-            type: 'connection',
-            title: 'Unexpected connection between',
-            description: 'Research has revealed an unexpected intellectual connection between'
-        },
-        {
-            type: 'citation',
-            title: 'New citation analysis of',
-            description: 'A comprehensive citation network analysis reveals patterns in'
-        },
-        {
-            type: 'publication',
-            title: 'Obscure publication by',
-            description: 'A rarely discussed publication that demonstrates early formulations of'
+    // Gather information based on type
+    if (infoType === 'paper') {
+        const title = document.getElementById('paper-title').value;
+        const year = parseInt(document.getElementById('paper-year').value);
+        
+        if (!title || isNaN(year)) {
+            alert('Please enter a valid title and year.');
+            return;
         }
-    ];
-    
-    const randomType = tileTypes[Math.floor(Math.random() * tileTypes.length)];
-    
-    // Random themes
-    const themes = ['power structures', 'feminist theory', 'post-structuralism', 'dialectical materialism', 
-                    'phenomenology', 'subject formation', 'discourse analysis', 'cultural critique'];
-    const randomTheme = themes[Math.floor(Math.random() * themes.length)];
-    
-    // Generate tile data
-    let title, description;
-    
-    if (randomType.type === 'connection' && selectedAcademics.length > 1) {
-        title = `${randomType.title} ${selectedAcademics[0]} and ${selectedAcademics[1]}`;
-        description = `${randomType.description} ${selectedAcademics[0]} and ${selectedAcademics[1]} regarding ${randomTheme}.`;
-    } else {
-        title = `${randomType.title} ${selectedAcademics[0]}`;
-        description = `${randomType.description} ${selectedAcademics[0]}'s work on ${randomTheme}.`;
+        
+        infoData = {
+            title,
+            year,
+            coauthors: []
+        };
+    } else if (infoType === 'event') {
+        const title = document.getElementById('event-title').value;
+        const year = parseInt(document.getElementById('event-date').value);
+        const location = document.getElementById('event-location').value;
+        
+        if (!title || isNaN(year)) {
+            alert('Please enter a valid title and year.');
+            return;
+        }
+        
+        infoData = {
+            title,
+            year,
+            location
+        };
+    } else if (infoType === 'connection') {
+        const name = document.getElementById('connection-name').value;
+        
+        if (!name) {
+            alert('Please enter a valid academic name.');
+            return;
+        }
+        
+        infoData = name;
+    } else if (infoType === 'taxonomy') {
+        const category = document.getElementById('taxonomy-category').value;
+        const value = document.getElementById('taxonomy-value').value;
+        
+        if (!category || !value) {
+            alert('Please enter a valid category and value.');
+            return;
+        }
+        
+        infoData = {
+            category,
+            value
+        };
     }
     
-    return {
-        title,
-        date: formattedDate,
-        academics: selectedAcademics,
-        description,
-        id: Date.now() + Math.random()
-    };
+    // Update the academic in the database
+    const academic = databaseManager.getAcademic(academicName);
+    if (academic) {
+        if (infoType === 'paper') {
+            if (!academic.papers) {
+                academic.papers = [];
+            }
+            academic.papers.push(infoData);
+        } else if (infoType === 'event') {
+            if (!academic.events) {
+                academic.events = [];
+            }
+            academic.events.push(infoData);
+        } else if (infoType === 'connection') {
+            if (!academic.connections) {
+                academic.connections = [];
+            }
+            academic.connections.push(infoData);
+        } else if (infoType === 'taxonomy') {
+            if (!academic.taxonomies) {
+                academic.taxonomies = {};
+            }
+            if (!academic.taxonomies[infoData.category]) {
+                academic.taxonomies[infoData.category] = [];
+            }
+            academic.taxonomies[infoData.category].push(infoData.value);
+        }
+        
+        // Update display
+        displayAcademic(academic);
+        
+        // Save changes
+        databaseManager.saveToLocalStorage();
+        
+        // Hide form
+        document.getElementById('add-info-form').style.display = 'none';
+        
+        // Show success message with glitch effect
+        showGlitchEffect();
+        setTimeout(() => {
+            alert('Information added successfully!');
+        }, 300);
+    }
 }
 
 /**
- * Shuffle an array using Fisher-Yates algorithm
+ * Handle navigation to search view
  */
-function shuffleArray(array) {
-    const newArray = [...array];
-    for (let i = newArray.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+function navSearchHandler() {
+    showGlitchEffect();
+    hideAllSections();
+    document.getElementById('search-container').style.display = 'block';
+    setActiveNavItem('nav-search');
+    
+    // Focus the search box
+    const searchBox = document.querySelector('.search-box');
+    if (searchBox) {
+        searchBox.focus();
     }
-    return newArray;
 }
 
 /**
- * Show a visual glitch effect when transitioning between sections
+ * Show a visual glitch effect (reusing from original code)
  */
 function showGlitchEffect() {
     const glitchElement = document.createElement('div');
@@ -212,62 +510,3 @@ function showGlitchEffect() {
         glitchElement.remove();
     }, 500);
 }
-
-// Enhanced navigation handlers with glitch effect
-function navNoveltyHandler() {
-    showGlitchEffect();
-    hideAllSections();
-    populateNoveltyTiles();
-    document.getElementById('novelty-tiles-container').style.display = 'block';
-}
-
-function navSearchHandler() {
-    showGlitchEffect();
-    hideAllSections();
-    document.getElementById('search-container').style.display = 'block';
-    
-    // Clear any previous results
-    document.getElementById('deep-search-results').innerHTML = '';
-    
-    // Focus the search box
-    if (searchBox) {
-        searchBox.focus();
-    }
-}
-
-function navDatabaseHandler() {
-    showGlitchEffect();
-    hideAllSections();
-    populateDatabaseBrowser();
-    document.getElementById('database-browser').style.display = 'block';
-}
-
-// Add event listener for novelty tile toggle
-document.addEventListener('DOMContentLoaded', () => {
-    const noveltyToggle = document.querySelector('.novelty-toggle');
-    if (noveltyToggle) {
-        noveltyToggle.addEventListener('click', () => {
-            const tilesContainer = document.getElementById('novelty-tiles-container');
-            if (tilesContainer) {
-                if (tilesContainer.classList.contains('expanded')) {
-                    tilesContainer.classList.remove('expanded');
-                    noveltyToggle.textContent = '×';
-                } else {
-                    tilesContainer.classList.add('expanded');
-                    noveltyToggle.textContent = '+';
-                }
-            }
-        });
-    }
-    
-    // Add logo animation trigger
-    const mainLogo = document.getElementById('main-logo');
-    if (mainLogo) {
-        mainLogo.addEventListener('click', () => {
-            mainLogo.classList.add('animated');
-            setTimeout(() => {
-                mainLogo.classList.remove('animated');
-            }, 2000);
-        });
-    }
-});
