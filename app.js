@@ -1,600 +1,570 @@
-/**
- * KillPhilosophy Main Application
- * 
- * This is the main JavaScript file that coordinates all functionality for the
- * KillPhilosophy website. It handles UI interactions, data display, and integrates
- * with the database and GitHub managers.
- */
+// Main application script for KillPhilosophy
 
-document.addEventListener('DOMContentLoaded', () => {
-    // DOM Elements
-    const searchBox = document.querySelector('.search-box');
-    const searchStatus = document.querySelector('.search-status');
+// Global references to key DOM elements
+let searchBox;
+let searchStatus;
+let currentAcademic = null;
+
+/**
+ * Main function to initialize the application
+ */
+function initializeApplication() {
+    console.log('Initializing KillPhilosophy application...');
+    
+    // Find important DOM elements
+    searchBox = document.querySelector('.search-box');
+    searchStatus = document.querySelector('.search-status');
+    
+    // Verify key DOM elements exist
+    const criticalElements = [
+        { id: 'academic-profile', name: 'Academic Profile' },
+        { id: 'academic-name', name: 'Academic Name' },
+        { id: 'papers-list', name: 'Papers List' },
+        { id: 'events-list', name: 'Events List' },
+        { id: 'connections-list', name: 'Connections List' },
+        { id: 'deep-search-container', name: 'Deep Search Container' },
+        { id: 'run-deep-search', name: 'Run Deep Search Button' },
+        { id: 'novelty-tiles-container', name: 'Novelty Tiles Container' },
+        { id: 'novelty-tiles', name: 'Novelty Tiles' }
+    ];
+    
+    let allElementsExist = true;
+    criticalElements.forEach(element => {
+        const exists = document.getElementById(element.id) !== null;
+        if (!exists) {
+            console.error(`Critical element missing: ${element.name} (ID: ${element.id})`);
+            allElementsExist = false;
+        }
+    });
+    
+    if (!allElementsExist) {
+        console.error('Some critical elements are missing. The application may not function correctly.');
+        alert('KillPhilosophy initialization warning: Some UI elements are missing. Please check the console for details.');
+    }
+    
+    // Verify the database has loaded
+    const academicCount = Object.keys(databaseManager.academics).length;
+    console.log(`Database contains ${academicCount} academics`);
+    
+    if (academicCount === 0) {
+        console.warn('Database appears to be empty. Attempting to initialize with default data.');
+        databaseManager._initializeDefaultData();
+        databaseManager.saveToLocalStorage();
+    }
+    
+    // Setup event listeners
+    setupEventListeners();
+    
+    // Set up deep search functionality
+    setupDeepSearch();
+    
+    // Initialize GitHub status if GitHub module exists
+    if (typeof githubManager !== 'undefined') {
+        try {
+            initializeGitHubStatus();
+        } catch (error) {
+            console.error('Failed to initialize GitHub status:', error);
+        }
+    }
+    
+    // Load initial data - show first academic
+    const academics = databaseManager.getAllAcademics();
+    if (academics.length > 0) {
+        displayAcademic(academics[0]);
+        if (searchBox) {
+            searchBox.value = academics[0].name;
+        }
+    }
+    
+    // Populate novelty tiles
+    populateNoveltyTiles();
+    
+    console.log('KillPhilosophy application initialized successfully!');
+}
+
+/**
+ * Setup all event listeners for the application
+ */
+function setupEventListeners() {
+    // Main search
+    if (searchBox) {
+        // Remove any existing listeners (to avoid duplicates)
+        const newSearchBox = searchBox.cloneNode(true);
+        searchBox.parentNode.replaceChild(newSearchBox, searchBox);
+        searchBox = newSearchBox;
+        
+        // Add the enhanced search functionality
+        searchBox.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const searchTerm = searchBox.value.trim();
+                if (!searchTerm) return;
+                
+                // Show search indicator
+                if (searchStatus) {
+                    searchStatus.style.display = 'block';
+                    const statusText = searchStatus.querySelector('.search-status-text');
+                    if (statusText) {
+                        statusText.textContent = 'Searching database...';
+                    }
+                }
+                
+                // Perform search
+                setTimeout(() => {
+                    try {
+                        // Check for academic in database
+                        const academic = databaseManager.getAcademic(searchTerm);
+                        
+                        if (academic) {
+                            // Academic found in database
+                            if (searchStatus) searchStatus.style.display = 'none';
+                            displayAcademic(academic);
+                            
+                            // Check for novelty
+                            checkForNovelty(academic);
+                        } else {
+                            // Not found - update status for deep search
+                            if (searchStatus) {
+                                const statusText = searchStatus.querySelector('.search-status-text');
+                                if (statusText) {
+                                    statusText.textContent = 'Initiating deep search...';
+                                }
+                                
+                                // Prepare for deep search
+                                setTimeout(() => {
+                                    searchStatus.style.display = 'none';
+                                    initiateDeepSearch(searchTerm);
+                                }, 1000);
+                            } else {
+                                // If status element is missing, just start deep search
+                                initiateDeepSearch(searchTerm);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error during search:', error);
+                        alert('An error occurred during the search. Please try again.');
+                        if (searchStatus) searchStatus.style.display = 'none';
+                    }
+                }, 800);
+            }
+        });
+        
+        console.log('Search event listener attached');
+    } else {
+        console.error('Search box element not found');
+    }
+    
+    // Navigation listeners
+    const navElements = [
+        { id: 'nav-search', handler: navSearchHandler },
+        { id: 'nav-database', handler: navDatabaseHandler },
+        { id: 'nav-novelty-tiles', handler: navNoveltyTilesHandler },
+        { id: 'nav-deep-search', handler: navDeepSearchHandler },
+        { id: 'nav-about', handler: navAboutHandler },
+        { id: 'nav-contribute', handler: navContributeHandler }
+    ];
+    
+    navElements.forEach(nav => {
+        const element = document.getElementById(nav.id);
+        if (element) {
+            // Remove any existing listeners
+            const newElement = element.cloneNode(true);
+            element.parentNode.replaceChild(newElement, element);
+            
+            // Add new listener
+            newElement.addEventListener('click', function(e) {
+                e.preventDefault();
+                nav.handler();
+            });
+        } else {
+            console.warn(`Navigation element not found: ${nav.id}`);
+        }
+    });
+    
+    console.log('Navigation event listeners attached');
+}
+
+/**
+ * Function to display an academic profile
+ */
+function displayAcademic(academic) {
+    currentAcademic = academic;
+    
+    // Make sure we have DOM elements needed
     const academicProfile = document.getElementById('academic-profile');
     const academicName = document.getElementById('academic-name');
-    const academicDates = document.getElementById('academic-dates');
     const academicBio = document.getElementById('academic-bio');
     const papersList = document.getElementById('papers-list');
     const eventsList = document.getElementById('events-list');
     const connectionsList = document.getElementById('connections-list');
-    const taxonomiesList = document.getElementById('taxonomies-list');
-    const addInfoBtn = document.getElementById('add-info-btn');
-    const addInfoForm = document.getElementById('add-info-form');
-    const infoTypeSelect = document.getElementById('info-type');
-    const submitInfoBtn = document.getElementById('submit-info');
-    const databaseBrowser = document.getElementById('database-browser');
-    const dbList = document.getElementById('db-list');
-    const githubStatusPanel = document.getElementById('github-status-panel');
-    const githubIndicator = document.getElementById('github-indicator');
-    const githubStatusText = document.getElementById('github-status-text');
-    const repoLink = document.getElementById('repo-link');
-    const aboutRepoLink = document.getElementById('about-repo-link');
     
-    // Navigation elements
-    const navSearch = document.getElementById('nav-search');
-    const navDatabase = document.getElementById('nav-database');
-    const navNoveltyTiles = document.getElementById('nav-novelty-tiles');
-    const navDeepSearch = document.getElementById('nav-deep-search');
-    const navAbout = document.getElementById('nav-about');
-    const navContribute = document.getElementById('nav-contribute');
-    const navAdmin = document.getElementById('nav-admin');
+    if (!academicProfile || !academicName || !academicBio || !papersList || !eventsList || !connectionsList) {
+        console.error('Missing DOM elements for displaying academic');
+        return;
+    }
     
-    // Modals
-    const aboutModal = document.getElementById('about-modal');
-    const closeAboutModal = document.getElementById('close-about-modal');
-    const contributionModal = document.getElementById('contribution-modal');
-    const closeContributionModal = document.getElementById('close-contribution-modal');
-
-    // Initialize GitHub check
-    initializeGitHubStatus();
+    // Hide other sections and show the academic profile
+    hideAllSections();
+    academicProfile.style.display = 'block';
     
-    // Function to initialize GitHub status
-    async function initializeGitHubStatus() {
-        // Update repo links
-        const repoUrl = `https://github.com/${githubManager.repoOwner}/${githubManager.repoName}`;
-        repoLink.href = repoUrl;
-        aboutRepoLink.href = repoUrl;
-        
-        // Check GitHub repository status
-        if (githubManager.repoOwner && githubManager.repoName) {
-            githubIndicator.className = 'indicator-circle indicator-connecting';
-            githubStatusText.textContent = 'Connecting to GitHub...';
+    // Fill in the academic details
+    academicName.textContent = academic.name;
+    academicBio.textContent = academic.bio;
+    
+    // Display taxonomies
+    const taxonomyContainers = {
+        discipline: document.getElementById('taxonomy-discipline'),
+        tradition: document.getElementById('taxonomy-tradition'),
+        era: document.getElementById('taxonomy-era'),
+        methodology: document.getElementById('taxonomy-methodology'),
+        theme: document.getElementById('taxonomy-theme')
+    };
+    
+    // Clear and populate taxonomy lists
+    for (const category in taxonomyContainers) {
+        const container = taxonomyContainers[category];
+        if (container) {
+            container.innerHTML = '';
             
-            try {
-                const repoExists = await githubManager.checkRepository();
-                
-                if (repoExists) {
-                    githubIndicator.className = 'indicator-circle indicator-online';
-                    githubStatusText.textContent = `Connected to ${githubManager.repoOwner}/${githubManager.repoName}`;
-                    
-                    // If we're authenticated, show admin link
-                    if (githubManager.isAuthenticated) {
-                        navAdmin.style.display = 'inline-block';
-                    }
-                    
-                    // Try to sync database
-                    if (githubManager.isAuthenticated) {
-                        syncDatabaseWithGitHub();
-                    }
-                } else {
-                    githubIndicator.className = 'indicator-circle indicator-offline';
-                    githubStatusText.textContent = 'Repository not found or inaccessible';
-                }
-            } catch (error) {
-                githubIndicator.className = 'indicator-circle indicator-offline';
-                githubStatusText.textContent = 'Failed to connect to GitHub';
-                githubManager.log(`GitHub connection error: ${error.message}`, 'error');
+            if (academic.taxonomies && academic.taxonomies[category]) {
+                academic.taxonomies[category].forEach(item => {
+                    const badge = document.createElement('span');
+                    badge.className = 'taxonomy-badge';
+                    badge.textContent = item;
+                    container.appendChild(badge);
+                });
             }
-        } else {
-            githubIndicator.className = 'indicator-circle indicator-offline';
-            githubStatusText.textContent = 'Not connected to GitHub';
         }
     }
     
-    // Sync local database with GitHub repo
-    async function syncDatabaseWithGitHub() {
-        if (!githubManager.isAuthenticated) return;
-        
-        try {
-            const result = await githubManager.syncDatabase(databaseManager);
+    // Populate papers list
+    papersList.innerHTML = '';
+    if (academic.papers && academic.papers.length > 0) {
+        academic.papers.forEach(paper => {
+            const paperItem = document.createElement('div');
+            paperItem.className = 'list-item';
+            paperItem.innerHTML = `
+                <div class="list-item-title">${paper.title}</div>
+                <div class="list-item-year">${paper.year}</div>
+            `;
+            papersList.appendChild(paperItem);
+        });
+    } else {
+        papersList.innerHTML = '<div class="empty-list">No papers found</div>';
+    }
+    
+    // Populate events list
+    eventsList.innerHTML = '';
+    if (academic.events && academic.events.length > 0) {
+        academic.events.forEach(event => {
+            const eventItem = document.createElement('div');
+            eventItem.className = 'list-item';
+            eventItem.innerHTML = `
+                <div class="list-item-title">${event.title}</div>
+                <div class="list-item-details">${event.year} | ${event.location}</div>
+            `;
+            eventsList.appendChild(eventItem);
+        });
+    } else {
+        eventsList.innerHTML = '<div class="empty-list">No events found</div>';
+    }
+    
+    // Populate connections list
+    connectionsList.innerHTML = '';
+    if (academic.connections && academic.connections.length > 0) {
+        academic.connections.forEach(connection => {
+            const connectionItem = document.createElement('div');
+            connectionItem.className = 'list-item connection-item';
+            connectionItem.textContent = connection;
             
-            if (result.success) {
-                githubManager.log(`Database sync: ${result.message}`, 'success');
-                
-                // If we received a database from GitHub, update our local one
-                if (result.operation === 'pull' || result.operation === 'merge') {
-                    if (result.database.academics) {
-                        databaseManager.academics = result.database.academics;
+            // Add click event to view the connected academic
+            connectionItem.addEventListener('click', () => {
+                const connectedAcademic = databaseManager.getAcademic(connection);
+                if (connectedAcademic) {
+                    displayAcademic(connectedAcademic);
+                    if (searchBox) {
+                        searchBox.value = connection;
                     }
-                    
-                    if (result.database.noveltyTiles) {
-                        databaseManager.noveltyTiles = result.database.noveltyTiles;
+                } else {
+                    if (confirm(`Information for ${connection} is not in the database yet. Would you like to run a deep search?`)) {
+                        initiateDeepSearch(connection);
                     }
-                    
-                    if (result.database.taxonomyCategories) {
-                        databaseManager.taxonomyCategories = result.database.taxonomyCategories;
-                    }
-                    
-                    databaseManager.saveToLocalStorage();
-                    githubManager.log('Local database updated from GitHub', 'success');
                 }
+            });
+            
+            connectionsList.appendChild(connectionItem);
+        });
+    } else {
+        connectionsList.innerHTML = '<div class="empty-list">No connections found</div>';
+    }
+    
+    console.log(`Displayed academic: ${academic.name}`);
+}
+
+/**
+ * Function to hide all main sections
+ */
+function hideAllSections() {
+    const sections = [
+        'academic-profile',
+        'database-browser',
+        'novelty-tiles-container',
+        'deep-search-container'
+    ];
+    
+    sections.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.style.display = 'none';
+        }
+    });
+}
+
+/**
+ * Function to populate the database browser
+ */
+function populateDatabaseBrowser() {
+    const browserContainer = document.getElementById('database-academics');
+    if (!browserContainer) {
+        console.error('Database browser container not found');
+        return;
+    }
+    
+    browserContainer.innerHTML = '';
+    
+    // Get all academics and sort by name
+    const academics = databaseManager.getAllAcademics().sort((a, b) => a.name.localeCompare(b.name));
+    
+    if (academics.length === 0) {
+        browserContainer.innerHTML = '<div class="empty-list">No academics in database</div>';
+        return;
+    }
+    
+    // Create category headers for alphabetical sorting
+    let currentLetter = '';
+    
+    academics.forEach(academic => {
+        const firstLetter = academic.name.charAt(0).toUpperCase();
+        
+        // Add new letter header if needed
+        if (firstLetter !== currentLetter) {
+            currentLetter = firstLetter;
+            
+            const letterHeader = document.createElement('div');
+            letterHeader.className = 'letter-header';
+            letterHeader.textContent = currentLetter;
+            browserContainer.appendChild(letterHeader);
+        }
+        
+        // Create academic item
+        const academicItem = document.createElement('div');
+        academicItem.className = 'database-academic-item';
+        academicItem.textContent = academic.name;
+        
+        // Add taxonomies as badges
+        const taxonomyStr = [];
+        if (academic.taxonomies) {
+            for (const category in academic.taxonomies) {
+                if (academic.taxonomies[category] && academic.taxonomies[category].length > 0) {
+                    taxonomyStr.push(academic.taxonomies[category][0]);
+                }
+            }
+        }
+        
+        if (taxonomyStr.length > 0) {
+            const taxonomyBadges = document.createElement('div');
+            taxonomyBadges.className = 'database-taxonomy-badges';
+            taxonomyBadges.textContent = taxonomyStr.join(' • ');
+            academicItem.appendChild(taxonomyBadges);
+        }
+        
+        // Add click event to view the academic
+        academicItem.addEventListener('click', () => {
+            displayAcademic(academic);
+            if (searchBox) {
+                searchBox.value = academic.name;
+            }
+            navSearchHandler(); // Switch to the search view
+        });
+        
+        browserContainer.appendChild(academicItem);
+    });
+}
+
+/**
+ * Function to populate the novelty tiles
+ */
+function populateNoveltyTiles() {
+    const tilesContainer = document.getElementById('novelty-tiles');
+    if (!tilesContainer) {
+        console.error('Novelty tiles container not found');
+        return;
+    }
+    
+    tilesContainer.innerHTML = '';
+    
+    let tiles = databaseManager.getNoveltyTiles();
+    
+    // Sort tiles by date (newest first)
+    tiles = tiles.sort((a, b) => {
+        return new Date(b.date) - new Date(a.date);
+    });
+    
+    if (tiles.length === 0) {
+        tilesContainer.innerHTML = '<div class="empty-list">No novelty tiles available. Try searching for academics to generate some!</div>';
+        return;
+    }
+    
+    tiles.forEach(tile => {
+        const tileElement = document.createElement('div');
+        tileElement.className = 'novelty-tile';
+        
+        let academicsHtml = '';
+        for (let i = 0; i < tile.academics.length; i++) {
+            academicsHtml += '<span class="novelty-academic">' + tile.academics[i] + '</span>';
+            if (i < tile.academics.length - 1) {
+                academicsHtml += ' • ';
+            }
+        }
+        
+        // Enhanced tile HTML with improved formatting and details
+        tileElement.innerHTML = `
+            <div class="novelty-tile-header">
+                <div class="novelty-tile-title">${tile.title}</div>
+                <div class="novelty-tile-date">${formatDate(tile.date)}</div>
+            </div>
+            <div class="novelty-academics">${academicsHtml}</div>
+            <div class="novelty-description">${tile.description}</div>
+            <div class="novelty-tile-footer">Click to explore</div>
+        `;
+        
+        // Add click event to view the first academic in the tile
+        tileElement.addEventListener('click', () => {
+            const firstAcademic = tile.academics[0];
+            const academic = databaseManager.getAcademic(firstAcademic);
+            
+            if (academic) {
+                // Display the academic
+                displayAcademic(academic);
+                if (searchBox) {
+                    searchBox.value = firstAcademic;
+                }
+                navSearchHandler(); // Switch to the search view
             } else {
-                githubManager.log(`Database sync failed: ${result.message}`, 'error');
-            }
-        } catch (error) {
-            githubManager.log(`Database sync error: ${error.message}`, 'error');
-        }
-    }
-    
-    // Function to hide all main content sections
-    function hideAllSections() {
-        academicProfile.style.display = 'none';
-        databaseBrowser.style.display = 'none';
-        document.getElementById('novelty-tiles-container').style.display = 'none';
-        document.getElementById('deep-search-container').style.display = 'none';
-        document.getElementById('admin-container').style.display = 'none';
-        githubStatusPanel.style.display = 'none';
-    }
-    
-    // Function to display academic information
-    function displayAcademic(academicData) {
-        academicName.textContent = academicData.name;
-        academicDates.textContent = academicData.dates || '';
-        academicBio.textContent = academicData.bio || '';
-        
-        // Display taxonomies if they exist
-        taxonomiesList.innerHTML = '';
-        
-        if (academicData.taxonomies) {
-            for (const category in academicData.taxonomies) {
-                if (academicData.taxonomies.hasOwnProperty(category)) {
-                    const tags = academicData.taxonomies[category];
-                    const categoryElement = document.createElement('div');
-                    categoryElement.className = 'taxonomy-category';
-                    
-                    // Format the category name (capitalize first letter, replace hyphens with spaces)
-                    const formattedCategory = category.charAt(0).toUpperCase() + 
-                        category.slice(1).replace(/-/g, ' ');
-                    
-                    categoryElement.innerHTML = '<span class="taxonomy-category-name">' + formattedCategory + ':</span> ';
-                    
-                    // Add tags
-                    for (let i = 0; i < tags.length; i++) {
-                        const tagElement = document.createElement('span');
-                        tagElement.className = 'taxonomy-tag';
-                        tagElement.textContent = tags[i];
-                        categoryElement.appendChild(tagElement);
-                    }
-                    
-                    taxonomiesList.appendChild(categoryElement);
+                // Trigger deep search
+                if (confirm(`Information for ${firstAcademic} is not in the database yet. Would you like to run a deep search?`)) {
+                    initiateDeepSearch(firstAcademic);
                 }
             }
-        }
-        
-        // Display papers
-        papersList.innerHTML = '';
-        const papers = academicData.papers || [];
-        if (papers.length === 0) {
-            papersList.innerHTML = '<div class="empty-list">No papers or publications listed.</div>';
-        } else {
-            for (let i = 0; i < papers.length; i++) {
-                const paper = papers[i];
-                const paperElement = document.createElement('div');
-                paperElement.className = 'paper-item';
-                paperElement.innerHTML = 
-                    '<div class="paper-title">' + paper.title + '</div>' +
-                    '<div class="paper-metadata">' + (paper.year || 'n/a') + ' | ' + (paper.journal || 'n/a') + '</div>';
-                papersList.appendChild(paperElement);
-            }
-        }
-        
-        // Display events
-        eventsList.innerHTML = '';
-        const events = academicData.events || [];
-        if (events.length === 0) {
-            eventsList.innerHTML = '<div class="empty-list">No event appearances listed.</div>';
-        } else {
-            for (let i = 0; i < events.length; i++) {
-                const event = events[i];
-                const eventElement = document.createElement('div');
-                eventElement.className = 'event-item';
-                eventElement.innerHTML = 
-                    '<div class="event-title">' + event.title + '</div>' +
-                    '<div class="event-metadata">' + (event.date || 'n/a') + ' | ' + (event.location || 'n/a') + '</div>' +
-                    (event.description ? '<div class="event-description">' + event.description + '</div>' : '');
-                eventsList.appendChild(eventElement);
-            }
-        }
-        
-        // Display connections
-        connectionsList.innerHTML = '';
-        const connections = academicData.connections || [];
-        if (connections.length === 0) {
-            connectionsList.innerHTML = '<div class="empty-list">No connections listed.</div>';
-        } else {
-            for (let i = 0; i < connections.length; i++) {
-                const connection = connections[i];
-                const connectionElement = document.createElement('div');
-                connectionElement.className = 'connection-item';
-                connectionElement.innerHTML = 
-                    '<span class="connection-name">' + connection.name + '</span>' +
-                    '<span class="connection-type">(' + (connection.type || 'connection') + ')</span>' +
-                    (connection.description ? '<div class="connection-description">' + connection.description + '</div>' : '');
-                
-                // Use closure to preserve reference to connection
-                (function(conn) {
-                    connectionElement.querySelector('.connection-name').addEventListener('click', function() {
-                        const academic = databaseManager.getAcademic(conn.name);
-                        if (academic) {
-                            displayAcademic(academic);
-                            searchBox.value = conn.name;
-                        } else {
-                            // Trigger deep search for this academic
-                            if (confirm('Information for ' + conn.name + ' is not in the database yet. Would you like to run a deep search to find information?')) {
-                                initiateDeepSearch(conn.name);
-                            }
-                        }
-                    });
-                })(connection);
-                
-                connectionsList.appendChild(connectionElement);
-            }
-        }
-        
-        // Hide other sections and show the academic profile
-        hideAllSections();
-        academicProfile.style.display = 'block';
-    }
-
-    // Enhanced search functionality with dual capabilities
-    searchBox.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            const searchTerm = searchBox.value.trim();
-            if (!searchTerm) return;
-            
-            // Show search indicator
-            searchStatus.style.display = 'block';
-            searchStatus.querySelector('.search-status-text').textContent = 'Searching database...';
-            
-            // Simulate search delay
-            setTimeout(() => {
-                // Check for academic in database
-                const academic = databaseManager.getAcademic(searchTerm);
-                
-                if (academic) {
-                    // Academic found in database
-                    searchStatus.style.display = 'none';
-                    displayAcademic(academic);
-                } else {
-                    // Not found - update status for deep search
-                    searchStatus.querySelector('.search-status-text').textContent = 'Initiating deep search...';
-                    
-                    // Simulate deep search preparation
-                    setTimeout(() => {
-                        // Hide search status and initiate deep search
-                        searchStatus.style.display = 'none';
-                        initiateDeepSearch(searchTerm);
-                    }, 1000);
-                }
-            }, 800);
-        }
-    });
-
-    // Function to initiate deep search
-    function initiateDeepSearch(searchTerm) {
-        // Hide other sections
-        hideAllSections();
-        
-        // Show deep search container
-        document.getElementById('deep-search-container').style.display = 'block';
-        
-        // Fill in search form
-        document.getElementById('search-academic1').value = searchTerm;
-        
-        // Focus on the deep search section
-        document.getElementById('deep-search-container').scrollIntoView({ behavior: 'smooth' });
-        
-        // Optional: Auto-trigger search
-        if (confirm('No academic found with the name "' + searchTerm + '" in our database. Would you like to run a deep search to find information?')) {
-            document.getElementById('run-deep-search').click();
-        }
-    }
-
-    // Toggle form visibility
-    addInfoBtn.addEventListener('click', () => {
-        // Check for GitHub field visibility
-        const githubField = document.querySelector('.github-field');
-        const githubIdentity = document.querySelector('.github-identity');
-        
-        // Show GitHub fields if we have a repository configured
-        if (githubManager.repoOwner && githubManager.repoName) {
-            githubField.style.display = 'block';
-            githubIdentity.style.display = 'block';
-        } else {
-            githubField.style.display = 'none';
-            githubIdentity.style.display = 'none';
-        }
-        
-        addInfoForm.style.display = addInfoForm.style.display === 'none' ? 'block' : 'none';
-    });
-
-    // Form type toggle
-    infoTypeSelect.addEventListener('change', () => {
-        const selectedType = infoTypeSelect.value;
-        document.querySelectorAll('.paper-field, .event-field, .connection-field, .taxonomy-field').forEach(field => {
-            field.style.display = 'none';
         });
         
-        document.querySelectorAll(`.${selectedType}-field`).forEach(field => {
-            field.style.display = 'block';
-        });
+        tilesContainer.appendChild(tileElement);
     });
+}
 
-    // Submit new information
-    submitInfoBtn.addEventListener('click', async () => {
-        const currentAcademic = academicName.textContent;
-        if (!currentAcademic) {
-            alert('Please select an academic first.');
+/**
+ * Function to check for novelty for existing academics
+ */
+function checkForNovelty(academic) {
+    console.log(`Checking for novelty content for ${academic.name}...`);
+    
+    // This would be replaced with actual API calls to YouTube, publication databases, etc.
+    // For now, we'll simulate finding new content with random chance
+    const foundNewContent = Math.random() > 0.7; // 30% chance of finding new content
+    
+    if (foundNewContent) {
+        const today = new Date();
+        const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        
+        // Randomly select what kind of content we "found"
+        const contentTypes = ['lecture', 'paper', 'interview', 'debate', 'YouTube video'];
+        const contentType = contentTypes[Math.floor(Math.random() * contentTypes.length)];
+        
+        // Get a random theme from the academic's taxonomy
+        let theme = 'recent developments';
+        if (academic.taxonomies && academic.taxonomies.theme && academic.taxonomies.theme.length > 0) {
+            theme = academic.taxonomies.theme[Math.floor(Math.random() * academic.taxonomies.theme.length)];
+        }
+        
+        // Create a novelty tile
+        const tile = {
+            title: `New ${contentType}: ${academic.name} on ${theme}`,
+            date: formattedDate,
+            academics: [academic.name],
+            description: `${academic.name} has published a new ${contentType} discussing ${theme} in relation to contemporary discourse.`
+        };
+        
+        databaseManager.addNoveltyTile(tile);
+        console.log(`Added novelty tile for new ${contentType}:`, tile);
+        
+        // Notify the user about the new content
+        setTimeout(() => {
+            alert(`New content from ${academic.name} has been detected and added to Novelty Tiles!`);
+        }, 1500);
+    }
+}
+
+/**
+ * Function to initiate deep search
+ */
+function initiateDeepSearch(searchTerm) {
+    // Hide other sections
+    hideAllSections();
+    
+    // Show deep search container
+    const deepSearchContainer = document.getElementById('deep-search-container');
+    if (!deepSearchContainer) {
+        console.error('Deep search container not found');
+        return;
+    }
+    
+    deepSearchContainer.style.display = 'block';
+    
+    // Fill in search form
+    const academicInput1 = document.getElementById('search-academic1');
+    if (academicInput1) {
+        academicInput1.value = searchTerm;
+    }
+    
+    // Focus on the deep search section
+    deepSearchContainer.scrollIntoView({ behavior: 'smooth' });
+    
+    // Auto-trigger search instead of asking with confirm
+    const runDeepSearchBtn = document.getElementById('run-deep-search');
+    if (runDeepSearchBtn) {
+        runDeepSearchBtn.click();
+    } else {
+        console.error('Run deep search button not found');
+    }
+}
+
+/**
+ * Setup deep search functionality
+ */
+function setupDeepSearch() {
+    const runDeepSearchBtn = document.getElementById('run-deep-search');
+    const resultsContainer = document.getElementById('deep-search-results');
+    const searchStatusContainer = document.querySelector('.search-status-container');
+    
+    if (!runDeepSearchBtn || !resultsContainer) {
+        console.error('Deep search elements not found');
+        return;
+    }
+    
+    runDeepSearchBtn.addEventListener('click', () => {
+        const academic1 = document.getElementById('search-academic1')?.value.trim() || '';
+        const academic2 = document.getElementById('search-academic2')?.value.trim() || '';
+        const searchDepth = document.getElementById('search-depth')?.value || 'standard';
+        
+        if (!academic1) {
+            alert('Please enter at least one academic name to search.');
             return;
         }
         
-        const infoType = infoTypeSelect.value;
-        let validInput = true;
-        let infoData = null;
+        // Clear previous results
+        resultsContainer.innerHTML = '';
         
-        // Validate and collect data based on info type
-        if (infoType === 'paper') {
-            const title = document.getElementById('paper-title').value;
-            const year = document.getElementById('paper-year').value;
-            const journal = document.getElementById('paper-journal').value;
-            
-            if (!title) {
-                alert('Please enter a paper title.');
-                validInput = false;
-            } else {
-                infoData = {
-                    title: title,
-                    year: year || 'n/a',
-                    journal: journal || 'n/a',
-                    url: document.getElementById('paper-url').value || '#'
-                };
-            }
-        } else if (infoType === 'event') {
-            const title = document.getElementById('event-title').value;
-            const date = document.getElementById('event-date').value;
-            const location = document.getElementById('event-location').value;
-            
-            if (!title) {
-                alert('Please enter an event title.');
-                validInput = false;
-            } else {
-                infoData = {
-                    title: title,
-                    date: date || 'n/a',
-                    location: location || 'n/a',
-                    description: document.getElementById('event-description').value || ''
-                };
-            }
-        } else if (infoType === 'connection') {
-            const connName = document.getElementById('connection-name').value;
-            const connType = document.getElementById('connection-type').value;
-            
-            if (!connName) {
-                alert('Please enter an academic name for the connection.');
-                validInput = false;
-            } else {
-                infoData = {
-                    name: connName,
-                    type: connType,
-                    description: document.getElementById('connection-description').value || ''
-                };
-            }
-        } else if (infoType === 'taxonomy') {
-            const category = document.getElementById('taxonomy-category').value;
-            const value = document.getElementById('taxonomy-value').value;
-            let finalCategory = category;
-            
-            if (category === 'custom') {
-                finalCategory = document.getElementById('taxonomy-custom-category').value;
-                if (!finalCategory) {
-                    alert('Please enter a custom category name.');
-                    validInput = false;
-                }
-            }
-            
-            if (!value) {
-                alert('Please enter a taxonomy value.');
-                validInput = false;
-            } else if (validInput) {
-                infoData = {
-                    category: finalCategory,
-                    value: value
-                };
-            }
-        }
-        
-        if (validInput && infoData) {
-            // Check if GitHub contribution is requested
-            const contributeToGitHub = document.getElementById('contribute-to-github').checked;
-            const username = document.getElementById('github-username').value || 'anonymous';
-            
-            // First add to local database
-            const result = databaseManager.addAcademicInfo(
-                currentAcademic, 
-                infoType, 
-                infoData, 
-                { submitToGitHub: contributeToGitHub, username }
-            );
-            
-            if (!result) {
-                alert('Failed to add information to the database.');
-                return;
-            }
-            
-            // If GitHub contribution is requested and repository is configured
-            if (contributeToGitHub && githubManager.repoOwner && githubManager.repoName) {
-                // Show loading state
-                submitInfoBtn.disabled = true;
-                submitInfoBtn.textContent = 'Submitting...';
-                
-                try {
-                    // Submit to GitHub
-                    const githubResult = await githubManager.submitAcademicInfo(
-                        currentAcademic,
-                        infoType,
-                        infoData,
-                        username
-                    );
-                    
-                    // Show contribution modal with result
-                    const contributionResult = document.getElementById('contribution-result');
-                    contributionModal.style.display = 'block';
-                    
-                    if (githubResult.success) {
-                        if (githubResult.simulated) {
-                            contributionResult.innerHTML = `
-                                <p>${githubResult.message}</p>
-                                <p>Your contribution has been saved locally and will be included in the next sync with GitHub.</p>
-                                <p>Contribution details:</p>
-                                <ul>
-                                    <li><strong>Academic:</strong> ${currentAcademic}</li>
-                                    <li><strong>Type:</strong> ${infoType}</li>
-                                </ul>
-                            `;
-                        } else {
-                            contributionResult.innerHTML = `
-                                <p>${githubResult.message}</p>
-                                <p>Thank you for your contribution! Your pull request has been created and will be reviewed by the maintainers.</p>
-                                <p>Contribution details:</p>
-                                <ul>
-                                    <li><strong>Academic:</strong> ${currentAcademic}</li>
-                                    <li><strong>Type:</strong> ${infoType}</li>
-                                    <li><strong>Pull Request:</strong> <a href="${githubResult.pullRequest.html_url}" target="_blank">#${githubResult.pullRequest.number}</a></li>
-                                </ul>
-                            `;
-                        }
-                    } else {
-                        contributionResult.innerHTML = `
-                            <p>Error: ${githubResult.message}</p>
-                            <p>Your contribution has been saved locally, but could not be submitted to GitHub.</p>
-                        `;
-                    }
-                } catch (error) {
-                    alert(`Error submitting to GitHub: ${error.message}`);
-                } finally {
-                    // Reset button state
-                    submitInfoBtn.disabled = false;
-                    submitInfoBtn.textContent = 'Submit';
-                }
-            } else {
-                // Just show success message for local addition
-                alert(`Information added to ${currentAcademic}'s profile.`);
-            }
-            
-            // Refresh display
-            const academic = databaseManager.getAcademic(currentAcademic);
-            if (academic) {
-                displayAcademic(academic);
-            }
-            
-            // Hide form and clear fields
-            addInfoForm.style.display = 'none';
-            document.querySelectorAll('input, textarea').forEach(field => {
-                field.value = '';
-            });
-        }
-    });
-
-    // Database browser functionality
-    function populateDatabaseBrowser() {
-        dbList.innerHTML = '';
-        const academics = databaseManager.getAllAcademics();
-        
-        // Sort academics by name
-        academics.sort((a, b) => a.name.localeCompare(b.name));
-        
-        academics.forEach(academic => {
-            const dbItem = document.createElement('div');
-            dbItem.className = 'db-item';
-            dbItem.textContent = `${academic.name} ${academic.dates ? `(${academic.dates})` : ''}`;
-            dbItem.addEventListener('click', () => {
-                displayAcademic(academic);
-                searchBox.value = academic.name;
-            });
-            dbList.appendChild(dbItem);
-        });
-    }
-
-    // Function to populate novelty tiles
-    function populateNoveltyTiles() {
-        const tilesContainer = document.getElementById('novelty-tiles');
-        tilesContainer.innerHTML = '';
-        
-        const tiles = databaseManager.getNoveltyTiles();
-        
-        tiles.forEach(tile => {
-            const tileElement = document.createElement('div');
-            tileElement.className = 'novelty-tile';
-            
-            let academicsHtml = '';
-            for (let i = 0; i < tile.academics.length; i++) {
-                academicsHtml += '<span class="novelty-academic">' + tile.academics[i] + '</span>';
-                if (i < tile.academics.length - 1) {
-                    academicsHtml += ' • ';
-                }
-            }
-            
-            tileElement.innerHTML = `
-                <div class="novelty-tile-header">
-                    <div class="novelty-tile-title">${tile.title}</div>
-                    <div class="novelty-tile-date">${tile.date}</div>
-                </div>
-                <div class="novelty-academics">${academicsHtml}</div>
-                <div class="novelty-description">${tile.description}</div>
-                <div class="novelty-tile-footer">Click to explore</div>
-            `;
-            
-            // Add click event to view the first academic in the tile
-            tileElement.addEventListener('click', () => {
-                const firstAcademic = tile.academics[0];
-                const academic = databaseManager.getAcademic(firstAcademic);
-                
-                if (academic) {
-                    // Display the academic
-                    displayAcademic(academic);
-                    searchBox.value = firstAcademic;
-                } else {
-                    // Trigger deep search
-                    if (confirm(`Information for ${firstAcademic} is not in the database yet. Would you like to run a deep search?`)) {
-                        initiateDeepSearch(firstAcademic);
-                    }
-                }
-            });
-            
-            tilesContainer.appendChild(tileElement);
-        });
-    }
-    
-    // Function to set up deep search mock
-    function setupDeepSearch() {
-        const runDeepSearchBtn = document.getElementById('run-deep-search');
-        const resultsContainer = document.getElementById('deep-search-results');
-        const searchStatusContainer = document.querySelector('.search-status-container');
-        
-        runDeepSearchBtn.addEventListener('click', () => {
-            const academic1 = document.getElementById('search-academic1').value.trim();
-            const academic2 = document.getElementById('search-academic2').value.trim();
-            const searchDepth = document.getElementById('search-depth').value;
-            
-            if (!academic1) {
-                alert('Please enter at least one academic name to search.');
-                return;
-            }
-            
-            // Clear previous results
-            resultsContainer.innerHTML = '';
-            
-            // Show search status
+        // Show search status
+        if (searchStatusContainer) {
             searchStatusContainer.style.display = 'block';
             const progressText = document.getElementById('search-progress-text');
             const progressBar = document.querySelector('.deep-search-progress-bar');
@@ -607,452 +577,461 @@ document.addEventListener('DOMContentLoaded', () => {
                 "Analyzing publication networks...",
                 "Mapping intellectual connections...",
                 "Extracting key conceptual frameworks...",
-                "Synthesizing search results..."
+                "Synthesizing search results...",
+                "Checking for recent content..."
             ];
             
             let currentStage = 0;
-            progressText.textContent = progressStages[currentStage];
+            if (progressText) {
+                progressText.textContent = progressStages[currentStage];
+            }
             
             // Simulate API call with progress updates
             const progressInterval = setInterval(() => {
                 progress += 2;
-                progressBar.style.width = `${progress}%`;
+                if (progressBar) {
+                    progressBar.style.width = `${progress}%`;
+                }
                 
                 // Update stage text at certain progress points
-                if (progress % 20 === 0 && currentStage < progressStages.length - 1) {
+                if (progress % 15 === 0 && currentStage < progressStages.length - 1) {
                     currentStage++;
-                    progressText.textContent = progressStages[currentStage];
+                    if (progressText) {
+                        progressText.textContent = progressStages[currentStage];
+                    }
                 }
                 
                 if (progress >= 100) {
                     clearInterval(progressInterval);
                     
-                    // Create a mock academic record if the search was for a new academic
-                    const existingAcademic = databaseManager.getAcademic(academic1);
-                    if (!existingAcademic) {
-                        databaseManager.generateMockAcademic(academic1, academic2);
-                    }
+                    // Generate a mock academic record
+                    const generatedAcademic = databaseManager.generateMockAcademic(academic1, academic2);
+                    
+                    // Now check for novelty content (YouTube videos, recent papers, etc.)
+                    createNoveltyTileForNewAcademic(generatedAcademic);
                     
                     setTimeout(() => {
                         // Hide progress indicators
-                        searchStatusContainer.style.display = 'none';
+                        if (searchStatusContainer) {
+                            searchStatusContainer.style.display = 'none';
+                        }
                         
                         // Display results and option to add to database
-                        displaySearchResults(academic1, academic2, searchDepth);
+                        displaySearchResults(academic1, academic2, searchDepth, generatedAcademic);
                     }, 500);
                 }
             }, 100);
-        });
-        
-        // API key configuration
-        document.getElementById('api-key-link').addEventListener('click', (e) => {
-            e.preventDefault();
-            const apiKey = prompt('Enter your Gemini API key:');
-            if (apiKey) {
-                localStorage.setItem('killphilosophy_gemini_api_key', apiKey);
-                alert('API key saved successfully.');
-            }
-        });
-    }
-    
-    // Function to display deep search results
-    function displaySearchResults(academic1, academic2, searchDepth) {
-        const resultsContainer = document.getElementById('deep-search-results');
-        
-        // Generate a confidence score based on search depth
-        let confidenceScore;
-        switch(searchDepth) {
-            case 'deep': confidenceScore = 'High (87%)'; break;
-            case 'medium': confidenceScore = 'Medium (72%)'; break;
-            default: confidenceScore = 'Basic (58%)'; break;
-        }
-        
-        resultsContainer.innerHTML = `
-            <h3>Deep Search Results</h3>
-            <p>${academic2 ? 'Analyzed connection between ' + academic1 + ' and ' + academic2 : 'Analyzed data for ' + academic1}</p>
-            
-            <div class="connection-discovery">
-                <h4>Data Confidence</h4>
-                <p><span class="connection-strength connection-strength-high"></span> ${confidenceScore} confidence in results</p>
-                <p>Data sources: ${Math.floor(Math.random() * 30) + 20} academic publications, ${Math.floor(Math.random() * 15) + 5} institutional archives</p>
-            </div>
-            
-            <div class="connection-discovery">
-                <h4>Key Findings</h4>
-                <ul>
-                    <li>Identified ${Math.floor(Math.random() * 8) + 3} major works and intellectual contributions</li>
-                    <li>${academic2 ? 'Detected conceptual overlap in theoretical frameworks' : 'Mapped primary academic influences and areas of impact'}</li>
-                    <li>Extracted taxonomy classifications based on publication patterns</li>
-                </ul>
-            </div>
-            
-            <button class="submit-btn" id="view-academic-btn">View Profile</button>
-        `;
-        
-        // View profile functionality
-        document.getElementById('view-academic-btn').addEventListener('click', () => {
-            // Get the academic from the database
-            const academic = databaseManager.getAcademic(academic1);
-            
-            if (academic) {
-                // Display the academic profile
-                displayAcademic(academic);
-                searchBox.value = academic1;
-            }
-        });
-    }
-    
-    // Function to set up admin panel
-    function setupAdminPanel() {
-        // Get admin tabs and panels
-        const adminTabs = document.querySelectorAll('.admin-tab');
-        const adminPanels = document.querySelectorAll('.admin-panel');
-        
-        // Add click event to admin login
-        navAdmin.addEventListener('click', (e) => {
-            e.preventDefault();
-            
-            // Check if GitHub is authenticated
-            if (!githubManager.isAuthenticated) {
-                const token = prompt('Enter GitHub token for admin access:');
-                
-                if (token) {
-                    // Save token and update auth status
-                    githubManager.saveSettings(githubManager.repoOwner, githubManager.repoName, token);
-                    githubManager.isAuthenticated = true;
-                    
-                    // Initialize GitHub elements
-                    initializeGitHubStatus();
-                    
-                    // Show admin panel
-                    showAdminPanel();
-                } else {
-                    alert('GitHub token is required for admin access.');
-                    return;
-                }
-            } else {
-                showAdminPanel();
-            }
-        });
-        
-        // Function to show admin panel
-        function showAdminPanel() {
-            // Hide other sections
-            hideAllSections();
-            
-            // Show admin container
-            document.getElementById('admin-container').style.display = 'block';
-            
-            // Initialize admin panels
-            initializeAdminPanels();
-        }
-        
-        // Initialize admin panel content
-        function initializeAdminPanels() {
-            // Populate submissions table
-            const submissions = databaseManager.getPendingSubmissions();
-            const submissionsTableBody = document.getElementById('submissions-table-body');
-            
-            submissionsTableBody.innerHTML = '';
-            if (submissions.length === 0) {
-                submissionsTableBody.innerHTML = '<tr><td colspan="5">No pending submissions</td></tr>';
-            } else {
-                submissions.forEach(submission => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${new Date(submission.date).toLocaleDateString()}</td>
-                        <td>${submission.type}</td>
-                        <td>${submission.academic}</td>
-                        <td>${submission.submittedBy}</td>
-                        <td>
-                            <button class="small-btn approve-btn">Approve</button>
-                            <button class="small-btn reject-btn">Reject</button>
-                        </td>
-                    `;
-                    
-                    // Add event listeners to buttons
-                    row.querySelector('.approve-btn').addEventListener('click', () => {
-                        // In a real implementation, this would submit to GitHub
-                        alert(`Approved submission for ${submission.academic}`);
-                        // Remove from list
-                        row.remove();
-                    });
-                    
-                    row.querySelector('.reject-btn').addEventListener('click', () => {
-                        if (confirm(`Reject submission for ${submission.academic}?`)) {
-                            row.remove();
-                        }
-                    });
-                    
-                    submissionsTableBody.appendChild(row);
-                });
-            }
-            
-            // Initialize taxonomy panel
-            const taxonomyCategories = document.getElementById('taxonomy-categories');
-            const taxonomies = databaseManager.getTaxonomies();
-            
-            taxonomyCategories.innerHTML = '';
-            for (const category in taxonomies) {
-                if (taxonomies.hasOwnProperty(category)) {
-                    const tags = taxonomies[category];
-                    
-                    // Format the category name (capitalize first letter, replace hyphens with spaces)
-                    const formattedCategory = category.charAt(0).toUpperCase() + 
-                        category.slice(1).replace(/-/g, ' ');
-                    
-                    const categoryDiv = document.createElement('div');
-                    categoryDiv.className = 'taxonomy-category';
-                    categoryDiv.innerHTML = `<h4>${formattedCategory}</h4>`;
-                    
-                    const tagsDiv = document.createElement('div');
-                    tagsDiv.className = 'taxonomy-tags';
-                    
-                    tags.forEach(tag => {
-                        const tagSpan = document.createElement('span');
-                        tagSpan.className = 'taxonomy-tag';
-                        tagSpan.textContent = tag;
-                        tagsDiv.appendChild(tagSpan);
-                    });
-                    
-                    // Add "Add New" tag
-                    const addNewTag = document.createElement('span');
-                    addNewTag.className = 'taxonomy-tag';
-                    addNewTag.textContent = '+ Add New';
-                    addNewTag.style.cursor = 'pointer';
-                    
-                    addNewTag.addEventListener('click', () => {
-                        const newTag = prompt(`Add new tag to ${formattedCategory}:`);
-                        if (newTag && newTag.trim()) {
-                            databaseManager.addTaxonomyValue(category, newTag.trim());
-                            // Refresh the panel
-                            initializeAdminPanels();
-                        }
-                    });
-                    
-                    tagsDiv.appendChild(addNewTag);
-                    categoryDiv.appendChild(tagsDiv);
-                    taxonomyCategories.appendChild(categoryDiv);
-                }
-            }
-            
-            // Initialize GitHub panel
-            if (githubManager.isAuthenticated) {
-                document.querySelector('.github-operations').style.display = 'block';
-                document.getElementById('github-repo').value = `${githubManager.repoOwner}/${githubManager.repoName}`;
-                document.getElementById('github-token').value = '••••••••••••••••';
-                
-                // Update log display
-                githubManager._updateLogDisplay();
-                
-                // Connect GitHub operations
-                document.getElementById('sync-database').addEventListener('click', () => {
-                    syncDatabaseWithGitHub();
-                });
-                
-                document.getElementById('pull-changes').addEventListener('click', async () => {
-                    try {
-                        githubManager.log('Pulling changes from GitHub...', 'info');
-                        const result = await githubManager.getDatabase();
-                        
-                        if (result.academics) {
-                            databaseManager.academics = result.academics;
-                            databaseManager.saveToLocalStorage();
-                            githubManager.log('Successfully pulled database from GitHub', 'success');
-                        }
-                    } catch (error) {
-                        githubManager.log(`Failed to pull changes: ${error.message}`, 'error');
-                    }
-                });
-                
-                document.getElementById('view-submissions').addEventListener('click', async () => {
-                    try {
-                        githubManager.log('Fetching pull requests...', 'info');
-                        const pullRequests = await githubManager.getPullRequests();
-                        
-                        if (pullRequests && pullRequests.length > 0) {
-                            githubManager.log(`Found ${pullRequests.length} open pull requests`, 'success');
-                            const prList = pullRequests.map(pr => `- #${pr.number}: ${pr.title} (by ${pr.user.login})`).join('\n');
-                            githubManager.log('Open pull requests:\n' + prList, 'info');
-                        } else {
-                            githubManager.log('No open pull requests found', 'info');
-                        }
-                    } catch (error) {
-                        githubManager.log(`Failed to fetch pull requests: ${error.message}`, 'error');
-                    }
-                });
-            } else {
-                document.querySelector('.github-operations').style.display = 'none';
-            }
-            
-            // Save settings functionality
-            document.getElementById('save-settings').addEventListener('click', () => {
-                const siteName = document.getElementById('site-name').value;
-                const siteDescription = document.getElementById('site-description').value;
-                const apiKey = document.getElementById('admin-api-key').value;
-                
-                // Save to localStorage
-                localStorage.setItem('killphilosophy_site_name', siteName);
-                localStorage.setItem('killphilosophy_site_description', siteDescription);
-                
-                if (apiKey) {
-                    localStorage.setItem('killphilosophy_gemini_api_key', apiKey);
-                }
-                
-                alert('Settings saved successfully');
-            });
-        }
-        
-        // GitHub connection handling
-        document.getElementById('connect-github').addEventListener('click', () => {
-            const repoInput = document.getElementById('github-repo').value;
-            const token = document.getElementById('github-token').value;
-            
-            if (!repoInput) {
-                alert('Please enter a GitHub repository in the format username/repo');
-                return;
-            }
-            
-            const [owner, name] = repoInput.split('/');
-            
-            if (!owner || !name) {
-                alert('Invalid repository format. Please use format: username/repo');
-                return;
-            }
-            
-            // Save settings
-            githubManager.saveSettings(owner, name, token);
-            
-            // Update GitHub status
-            initializeGitHubStatus();
-            
-            // Reinitialize admin panels
-            initializeAdminPanels();
-            
-            alert('GitHub settings saved. The repository status has been updated.');
-        });
-        
-        // Tab switching
-        adminTabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                // Remove active class from all tabs
-                adminTabs.forEach(t => t.classList.remove('active'));
-                
-                // Add active class to clicked tab
-                tab.classList.add('active');
-                
-                // Hide all panels
-                adminPanels.forEach(p => p.classList.remove('active'));
-                
-                // Show corresponding panel
-                const panelId = 'panel-' + tab.getAttribute('data-tab');
-                document.getElementById(panelId).classList.add('active');
-            });
-        });
-    }
-    
-    // Navigation
-    navSearch.addEventListener('click', (e) => {
-        e.preventDefault();
-        hideAllSections();
-        if (academicName.textContent) {
-            academicProfile.style.display = 'block';
         } else {
-            // Show first academic if none selected
-            const academics = databaseManager.getAllAcademics();
-            if (academics.length > 0) {
-                displayAcademic(academics[0]);
-                searchBox.value = academics[0].name;
-            }
+            // If status container is missing, just generate results directly
+            const generatedAcademic = databaseManager.generateMockAcademic(academic1, academic2);
+            createNoveltyTileForNewAcademic(generatedAcademic);
+            displaySearchResults(academic1, academic2, searchDepth, generatedAcademic);
         }
     });
-
-    navDatabase.addEventListener('click', (e) => {
-        e.preventDefault();
-        populateDatabaseBrowser();
-        hideAllSections();
-        databaseBrowser.style.display = 'block';
-    });
     
-    // Novelty Tiles nav
-    navNoveltyTiles.addEventListener('click', (e) => {
-        e.preventDefault();
-        populateNoveltyTiles();
-        hideAllSections();
-        document.getElementById('novelty-tiles-container').style.display = 'block';
-    });
+    console.log('Deep search functionality set up');
+}
+
+/**
+ * Function to create novelty tiles for newly discovered academics
+ */
+function createNoveltyTileForNewAcademic(academic) {
+    if (!academic) return;
     
-    // Deep Search nav
-    navDeepSearch.addEventListener('click', (e) => {
-        e.preventDefault();
-        hideAllSections();
-        document.getElementById('deep-search-container').style.display = 'block';
-    });
+    const today = new Date();
+    const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    
+    // Always create at least one novelty tile for a new academic
+    // This simulates finding a recent lecture, paper, or video
+    const contentTypes = ['YouTube lecture', 'recent publication', 'podcast appearance', 'conference presentation'];
+    const contentType = contentTypes[Math.floor(Math.random() * contentTypes.length)];
+    
+    // Get a theme from the academic's taxonomy
+    let theme = 'contemporary theory';
+    if (academic.taxonomies && academic.taxonomies.theme && academic.taxonomies.theme.length > 0) {
+        theme = academic.taxonomies.theme[Math.floor(Math.random() * academic.taxonomies.theme.length)];
+    }
+    
+    // Create a novelty tile for the discovered content
+    const tile = {
+        title: `Discovered ${contentType}: ${academic.name} on ${theme}`,
+        date: formattedDate,
+        academics: [academic.name],
+        description: `Our deep search has uncovered a recent ${contentType} where ${academic.name} discusses ${theme} through the lens of ${academic.taxonomies.discipline[0]}.`
+    };
+    
+    databaseManager.addNoveltyTile(tile);
+    console.log('Added novelty tile for new academic:', tile);
+}
 
-    navAbout.addEventListener('click', (e) => {
-        e.preventDefault();
-        aboutModal.style.display = 'block';
-    });
-
-    navContribute.addEventListener('click', (e) => {
-        e.preventDefault();
+/**
+ * Function to display deep search results
+ */
+function displaySearchResults(academic1, academic2, searchDepth, generatedAcademic) {
+    const resultsContainer = document.getElementById('deep-search-results');
+    if (!resultsContainer) {
+        console.error('Deep search results container not found');
+        return;
+    }
+    
+    if (!generatedAcademic) {
+        resultsContainer.innerHTML = '<div class="search-error">Error generating results. Please try again.</div>';
+        return;
+    }
+    
+    // Create the results display
+    const resultsElement = document.createElement('div');
+    resultsElement.className = 'deep-search-result';
+    
+    // Generate a summary of the academic
+    const taxonomySummary = [];
+    for (const category in generatedAcademic.taxonomies) {
+        if (generatedAcademic.taxonomies[category] && generatedAcademic.taxonomies[category].length > 0) {
+            taxonomySummary.push(`${category}: ${generatedAcademic.taxonomies[category].join(', ')}`);
+        }
+    }
+    
+    resultsElement.innerHTML = `
+        <h2 class="result-title">${generatedAcademic.name}</h2>
+        <div class="result-bio">${generatedAcademic.bio}</div>
+        <div class="result-taxonomies">
+            <h3>Academic Profile</h3>
+            <ul>
+                ${taxonomySummary.map(item => `<li>${item}</li>`).join('')}
+            </ul>
+        </div>
+        <div class="result-works">
+            <h3>Key Works</h3>
+            <ul>
+                ${generatedAcademic.papers.map(paper => `
+                    <li>${paper.title} (${paper.year})</li>
+                `).join('')}
+            </ul>
+        </div>
+        <div class="result-connections">
+            <h3>Intellectual Connections</h3>
+            <ul>
+                ${generatedAcademic.connections.map(connection => `
+                    <li>${connection}</li>
+                `).join('')}
+            </ul>
+        </div>
+        <div class="result-actions">
+            <button id="add-to-database" class="button primary-button">Add to Database</button>
+            <button id="modify-before-adding" class="button secondary-button">Modify Before Adding</button>
+            <button id="discard-results" class="button tertiary-button">Discard Results</button>
+        </div>
+    `;
+    
+    resultsContainer.appendChild(resultsElement);
+    
+    // Add event listeners to the buttons
+    document.getElementById('add-to-database')?.addEventListener('click', () => {
+        databaseManager.addAcademic(generatedAcademic);
+        alert(`${generatedAcademic.name} has been added to the database.`);
         
-        // First check if we have an academic selected
-        if (!academicName.textContent) {
-            // Show first academic if none selected
-            const academics = databaseManager.getAllAcademics();
-            if (academics.length > 0) {
-                displayAcademic(academics[0]);
-                searchBox.value = academics[0].name;
-            }
+        // Show the academic profile
+        displayAcademic(generatedAcademic);
+        if (searchBox) {
+            searchBox.value = generatedAcademic.name;
+        }
+        navSearchHandler(); // Switch to the search view
+    });
+    
+    document.getElementById('modify-before-adding')?.addEventListener('click', () => {
+        // Show modification form
+        const modificationForm = document.getElementById('modification-form');
+        if (!modificationForm) {
+            alert('Modification form not found. Please add directly to database.');
+            return;
         }
         
-        addInfoForm.style.display = 'block';
-        hideAllSections();
-        academicProfile.style.display = 'block';
-    });
-
-    closeAboutModal.addEventListener('click', () => {
-        aboutModal.style.display = 'none';
+        // Fill in the form with the generated data
+        fillModificationForm(generatedAcademic);
+        
+        // Show the form
+        modificationForm.style.display = 'block';
+        modificationForm.scrollIntoView({ behavior: 'smooth' });
     });
     
-    if (closeContributionModal) {
-        closeContributionModal.addEventListener('click', () => {
-            contributionModal.style.display = 'none';
+    document.getElementById('discard-results')?.addEventListener('click', () => {
+        // Clear the results
+        resultsContainer.innerHTML = '';
+        
+        // Show the search form again
+        const searchForm = document.querySelector('.deep-search-form');
+        if (searchForm) {
+            searchForm.scrollIntoView({ behavior: 'smooth' });
+        }
+    });
+}
+
+/**
+ * Function to fill in the modification form with generated data
+ */
+function fillModificationForm(academic) {
+    const form = document.getElementById('modification-form');
+    if (!form) {
+        console.error('Modification form not found');
+        return;
+    }
+    
+    // Fill in the basic fields
+    const nameInput = form.querySelector('#modify-name');
+    const bioInput = form.querySelector('#modify-bio');
+    
+    if (nameInput) nameInput.value = academic.name;
+    if (bioInput) bioInput.value = academic.bio;
+    
+    // Fill in taxonomy fields
+    for (const category in academic.taxonomies) {
+        const container = form.querySelector(`#modify-${category}`);
+        if (container) {
+            // Clear existing checkboxes
+            const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            // Check the appropriate boxes
+            academic.taxonomies[category].forEach(value => {
+                const checkbox = container.querySelector(`input[value="${value}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+        }
+    }
+    
+    // Add papers
+    const papersContainer = form.querySelector('#modify-papers');
+    if (papersContainer) {
+        papersContainer.innerHTML = '';
+        
+        academic.papers.forEach((paper, index) => {
+            const paperRow = document.createElement('div');
+            paperRow.className = 'paper-row';
+            paperRow.innerHTML = `
+                <input type="text" placeholder="Paper Title" value="${paper.title}" class="paper-title">
+                <input type="number" placeholder="Year" value="${paper.year}" class="paper-year">
+                <button class="remove-paper" data-index="${index}">Remove</button>
+            `;
+            papersContainer.appendChild(paperRow);
+        });
+        
+        // Add button to add more papers
+        const addPaperButton = document.createElement('button');
+        addPaperButton.className = 'add-paper';
+        addPaperButton.textContent = 'Add Paper';
+        addPaperButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            const paperRow = document.createElement('div');
+            paperRow.className = 'paper-row';
+            paperRow.innerHTML = `
+                <input type="text" placeholder="Paper Title" class="paper-title">
+                <input type="number" placeholder="Year" class="paper-year">
+                <button class="remove-paper">Remove</button>
+            `;
+            papersContainer.insertBefore(paperRow, addPaperButton);
+        });
+        
+        papersContainer.appendChild(addPaperButton);
+        
+        // Add event listeners for remove buttons
+        const removeButtons = papersContainer.querySelectorAll('.remove-paper');
+        removeButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.target.parentElement.remove();
+            });
         });
     }
-
-    window.addEventListener('click', (e) => {
-        if (e.target === aboutModal) {
-            aboutModal.style.display = 'none';
-        }
-        if (e.target === contributionModal) {
-            contributionModal.style.display = 'none';
-        }
-    });
     
-    // GitHub status panel toggle
-    document.querySelector('.github-link').addEventListener('click', (e) => {
-        // Only intercept if it's the containing link element
-        if (e.target.classList.contains('github-link') || e.target.closest('.github-link') === e.target) {
+    // Add event listener to save button
+    const saveButton = form.querySelector('#save-modifications');
+    if (saveButton) {
+        // Remove existing listeners
+        const newSaveButton = saveButton.cloneNode(true);
+        saveButton.parentNode.replaceChild(newSaveButton, saveButton);
+        
+        newSaveButton.addEventListener('click', (e) => {
             e.preventDefault();
-            hideAllSections();
-            githubStatusPanel.style.display = 'block';
-        }
-    });
-    
-    document.getElementById('close-github-status').addEventListener('click', () => {
-        githubStatusPanel.style.display = 'none';
-    });
-
-    // Initialize the page
-    setupDeepSearch();
-    setupAdminPanel();
-    
-    // Default to showing first academic in database
-    const academics = databaseManager.getAllAcademics();
-    if (academics.length > 0) {
-        displayAcademic(academics[0]);
-        searchBox.value = academics[0].name;
+            
+            // Collect the modified data
+            const modifiedAcademic = {
+                name: nameInput?.value || academic.name,
+                bio: bioInput?.value || academic.bio,
+                taxonomies: {},
+                papers: [],
+                events: academic.events, // Keep original events
+                connections: academic.connections // Keep original connections
+            };
+            
+            // Collect taxonomies
+            for (const category in academic.taxonomies) {
+                const container = form.querySelector(`#modify-${category}`);
+                if (container) {
+                    modifiedAcademic.taxonomies[category] = [];
+                    
+                    const checkboxes = container.querySelectorAll('input[type="checkbox"]:checked');
+                    checkboxes.forEach(checkbox => {
+                        modifiedAcademic.taxonomies[category].push(checkbox.value);
+                    });
+                } else {
+                    // Use original values if container not found
+                    modifiedAcademic.taxonomies[category] = academic.taxonomies[category];
+                }
+            }
+            
+            // Collect papers
+            const paperRows = papersContainer?.querySelectorAll('.paper-row');
+            if (paperRows) {
+                paperRows.forEach(row => {
+                    const title = row.querySelector('.paper-title')?.value.trim();
+                    const year = parseInt(row.querySelector('.paper-year')?.value || '0');
+                    
+                    if (title && year > 0) {
+                        modifiedAcademic.papers.push({
+                            title,
+                            year,
+                            coauthors: []
+                        });
+                    }
+                });
+            } else {
+                // Use original papers if container not found
+                modifiedAcademic.papers = academic.papers;
+            }
+            
+            // Add to database
+            databaseManager.addAcademic(modifiedAcademic);
+            alert(`${modifiedAcademic.name} has been added to the database.`);
+            
+            // Hide the form
+            form.style.display = 'none';
+            
+            // Show the academic profile
+            displayAcademic(modifiedAcademic);
+            if (searchBox) {
+                searchBox.value = modifiedAcademic.name;
+            }
+            navSearchHandler(); // Switch to the search view
+        });
     }
+}
+
+// Navigation Handlers
+function navSearchHandler() {
+    hideAllSections();
+    const academicProfile = document.getElementById('academic-profile');
+    if (!academicProfile) {
+        console.error('Academic profile section not found');
+        return;
+    }
+    
+    // Check if we have an academic name displayed
+    const academicName = document.getElementById('academic-name');
+    if (academicName && academicName.textContent) {
+        academicProfile.style.display = 'block';
+    } else {
+        // Show first academic if none selected
+        const academics = databaseManager.getAllAcademics();
+        if (academics.length > 0) {
+            displayAcademic(academics[0]);
+            if (searchBox) {
+                searchBox.value = academics[0].name;
+            }
+        }
+    }
+}
+
+function navDatabaseHandler() {
+    populateDatabaseBrowser();
+    hideAllSections();
+    const databaseBrowser = document.getElementById('database-browser');
+    if (databaseBrowser) {
+        databaseBrowser.style.display = 'block';
+    } else {
+        console.error('Database browser section not found');
+    }
+}
+
+function navNoveltyTilesHandler() {
+    populateNoveltyTiles();
+    hideAllSections();
+    const noveltyTilesContainer = document.getElementById('novelty-tiles-container');
+    if (noveltyTilesContainer) {
+        noveltyTilesContainer.style.display = 'block';
+    } else {
+        console.error('Novelty tiles container not found');
+    }
+}
+
+function navDeepSearchHandler() {
+    hideAllSections();
+    const deepSearchContainer = document.getElementById('deep-search-container');
+    if (deepSearchContainer) {
+        deepSearchContainer.style.display = 'block';
+    } else {
+        console.error('Deep search container not found');
+    }
+}
+
+function navAboutHandler() {
+    const aboutModal = document.getElementById('about-modal');
+    if (aboutModal) {
+        aboutModal.style.display = 'block';
+    } else {
+        console.error('About modal not found');
+    }
+}
+
+function navContributeHandler() {
+    // First check if we have an academic selected
+    const academicName = document.getElementById('academic-name');
+    if (!academicName || !academicName.textContent) {
+        // Show first academic if none selected
+        const academics = databaseManager.getAllAcademics();
+        if (academics.length > 0) {
+            displayAcademic(academics[0]);
+            if (searchBox) {
+                searchBox.value = academics[0].name;
+            }
+        }
+    }
+    
+    const addInfoForm = document.getElementById('add-info-form');
+    if (addInfoForm) {
+        addInfoForm.style.display = 'block';
+    }
+    
+    hideAllSections();
+    const academicProfile = document.getElementById('academic-profile');
+    if (academicProfile) {
+        academicProfile.style.display = 'block';
+    }
+}
+
+/**
+ * Helper function to format dates nicely
+ */
+function formatDate(dateString) {
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+        });
+    } catch (e) {
+        return dateString; // Fallback to original string if parsing fails
+    }
+}
+
+// Call the initialization when the DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    // The original initialization code will run first
+    // Then our enhanced initialization will run after a short delay
+    setTimeout(initializeApplication, 500);
 });
