@@ -38,6 +38,11 @@ function initializeDatabase() {
 function setupEventListeners() {
     // Navigation event listeners
     document.getElementById('nav-search').addEventListener('click', navSearchHandler);
+    document.getElementById('nav-novelty-tiles').addEventListener('click', navNoveltyHandler);
+    document.getElementById('nav-database').addEventListener('click', navDatabaseHandler);
+    document.getElementById('nav-deep-search').addEventListener('click', navDeepSearchHandler);
+    document.getElementById('nav-about').addEventListener('click', navAboutHandler);
+    document.getElementById('nav-contribute').addEventListener('click', navContributeHandler);
     
     // Search box event listener
     const searchBox = document.querySelector('.search-box');
@@ -51,6 +56,34 @@ function setupEventListeners() {
     
     // Academic profile event listeners (for when search results are clicked)
     setupAcademicProfileListeners();
+    
+    // Novelty tiles toggle button
+    const noveltyToggle = document.querySelector('.novelty-toggle');
+    if (noveltyToggle) {
+        noveltyToggle.addEventListener('click', () => {
+            const tilesContainer = document.getElementById('novelty-tiles-container');
+            if (tilesContainer) {
+                if (tilesContainer.classList.contains('expanded')) {
+                    tilesContainer.classList.remove('expanded');
+                    noveltyToggle.textContent = '×';
+                } else {
+                    tilesContainer.classList.add('expanded');
+                    noveltyToggle.textContent = '+';
+                }
+            }
+        });
+    }
+    
+    // Main logo animation trigger
+    const mainLogo = document.getElementById('main-logo');
+    if (mainLogo) {
+        mainLogo.addEventListener('click', () => {
+            mainLogo.classList.add('animated');
+            setTimeout(() => {
+                mainLogo.classList.remove('animated');
+            }, 2000);
+        });
+    }
 }
 
 /**
@@ -499,7 +532,470 @@ function navSearchHandler() {
 }
 
 /**
- * Show a visual glitch effect (reusing from original code)
+ * Handle navigation to novelty view
+ */
+function navNoveltyHandler() {
+    showGlitchEffect();
+    hideAllSections();
+    populateNoveltyTiles();
+    document.getElementById('novelty-tiles-container').style.display = 'block';
+    setActiveNavItem('nav-novelty-tiles');
+}
+
+/**
+ * Handle navigation to database view
+ */
+function navDatabaseHandler() {
+    showGlitchEffect();
+    hideAllSections();
+    populateDatabaseBrowser();
+    document.getElementById('database-browser').style.display = 'block';
+    setActiveNavItem('nav-database');
+}
+
+/**
+ * Handle navigation to deep search view
+ */
+function navDeepSearchHandler() {
+    showGlitchEffect();
+    hideAllSections();
+    document.getElementById('deep-search-container').style.display = 'block';
+    setActiveNavItem('nav-deep-search');
+}
+
+/**
+ * Handle navigation to about view
+ */
+function navAboutHandler() {
+    const aboutModal = document.getElementById('about-modal');
+    if (aboutModal) {
+        aboutModal.style.display = 'block';
+    }
+}
+
+/**
+ * Handle navigation to contribute view
+ */
+function navContributeHandler() {
+    // For now, just show about modal with contribution section
+    navAboutHandler();
+}
+
+/**
+ * Populate the database browser
+ */
+function populateDatabaseBrowser() {
+    const dbList = document.getElementById('db-list');
+    if (!dbList) return;
+    
+    dbList.innerHTML = '';
+    
+    const academics = databaseManager.getAllAcademics();
+    
+    // Sort academics alphabetically
+    academics.sort((a, b) => a.name.localeCompare(b.name));
+    
+    academics.forEach(academic => {
+        const dbItem = document.createElement('div');
+        dbItem.className = 'db-item';
+        dbItem.textContent = academic.name;
+        
+        dbItem.addEventListener('click', () => {
+            displayAcademic(academic);
+            hideAllSections();
+            document.getElementById('academic-profile').style.display = 'block';
+        });
+        
+        dbList.appendChild(dbItem);
+    });
+}
+
+/**
+ * Populate the novelty tiles with a fly's eye mosaic structure
+ */
+function populateNoveltyTiles() {
+    const tilesContainer = document.getElementById('novelty-tiles');
+    if (!tilesContainer) {
+        console.error('Novelty tiles container not found');
+        return;
+    }
+    
+    // Update the title to reflect biomimetic theme
+    const titleElement = document.querySelector('.novelty-title');
+    if (titleElement) {
+        titleElement.textContent = 'Omnidirectional Perception Field';
+    }
+    
+    // Update placeholder in search box
+    const searchBox = document.querySelector('.novelty-search-box');
+    if (searchBox) {
+        searchBox.placeholder = 'Detect patterns in the perceptual field...';
+    }
+    
+    // Clear container and update class
+    tilesContainer.innerHTML = '';
+    tilesContainer.className = 'mosaic-grid';
+    
+    // Get tiles data
+    let tiles = databaseManager.getNoveltyTiles();
+    
+    // Sort tiles by date (newest first)
+    tiles = tiles.sort((a, b) => {
+        return new Date(b.date) - new Date(a.date);
+    });
+    
+    // Generate placeholder tiles if needed
+    if (tiles.length === 0) {
+        // Generate some placeholder tiles
+        for (let i = 0; i < 20; i++) {
+            const placeholderTile = generateBiomimeticTile();
+            databaseManager.addNoveltyTile(placeholderTile);
+        }
+        tiles = databaseManager.getNoveltyTiles();
+    }
+    
+    // Ensure we have minimum number of tiles for the mosaic effect
+    const minimumTiles = 48; // Optimal for mosaic grid pattern
+    
+    if (tiles.length < minimumTiles) {
+        const extraTiles = [];
+        
+        for (let i = tiles.length; i < minimumTiles; i++) {
+            extraTiles.push(generateBiomimeticTile());
+        }
+        
+        // Add the extra tiles to the list for display
+        tiles = [...tiles, ...extraTiles];
+    }
+    
+    // Add randomness to tile order for more organic look
+    tiles = shuffleArray(tiles);
+    
+    // Create and append tiles with mosaic grid styling
+    tiles.forEach((tile, index) => {
+        const sensitivity = 0.3 + Math.random() * 0.7; // Random sensitivity for each "receptor"
+        const facetElement = document.createElement('div');
+        facetElement.className = 'mosaic-facet';
+        facetElement.style.setProperty('--facet-index', index);
+        facetElement.style.setProperty('--sensitivity', sensitivity);
+        
+        // Randomize the "sensitivity" of each tile (filter strength)
+        const filterStrength = 0.6 + Math.random() * 0.4;
+        facetElement.style.setProperty('--filter-strength', filterStrength);
+        
+        // Format academics list
+        let academicsHtml = '';
+        if (tile.academics && tile.academics.length > 0) {
+            academicsHtml = tile.academics.map((academic, i) => {
+                const separator = i < tile.academics.length - 1 ? '<span class="academic-separator">•</span>' : '';
+                return `<span class="tile-academic" data-academic="${academic}">${academic}</span>${separator}`;
+            }).join(' ');
+        } else {
+            academicsHtml = '<span class="tile-academic">Unknown</span>';
+        }
+        
+        // Create the facet surface and content
+        facetElement.innerHTML = `
+            <div class="facet-surface">
+                <div class="tile-content">
+                    <div class="tile-header">
+                        <div class="tile-title">${tile.title}</div>
+                        <div class="tile-date">${formatDate(tile.date)}</div>
+                    </div>
+                    <div class="tile-academics">${academicsHtml}</div>
+                    <div class="tile-description">${tile.description}</div>
+                </div>
+            </div>
+            <div class="facet-highlight"></div>
+        `;
+        
+        // Add click event to view academic
+        facetElement.addEventListener('click', () => {
+            if (!tile.academics || tile.academics.length === 0) return;
+            
+            const firstAcademic = tile.academics[0];
+            const academic = databaseManager.getAcademic(firstAcademic);
+            
+            if (academic) {
+                // Display the academic
+                displayAcademic(academic);
+                const searchBox = document.querySelector('.search-box');
+                if (searchBox) {
+                    searchBox.value = firstAcademic;
+                }
+                
+                // Switch to academic profile view with glitch effect
+                showGlitchEffect();
+                hideAllSections();
+                document.getElementById('academic-profile').style.display = 'block';
+            } else {
+                // Switch to search view and search for the academic
+                setActiveNavItem('nav-search');
+                navSearchHandler();
+                
+                const searchBox = document.querySelector('.search-box');
+                if (searchBox) {
+                    searchBox.value = firstAcademic;
+                    handleSearch(firstAcademic);
+                }
+            }
+        });
+        
+        tilesContainer.appendChild(facetElement);
+    });
+    
+    // Add async scanning effect after tiles are populated
+    setTimeout(() => simulateScanningMosaic(), 1000);
+}
+
+/**
+ * Generate a biomimetic-themed placeholder tile
+ */
+function generateBiomimeticTile() {
+    // Get random academics from the database
+    const academics = databaseManager.getAllAcademics();
+    const selectedAcademics = [];
+    
+    if (academics.length > 0) {
+        // Select 1-2 random academics
+        const numAcademics = Math.floor(Math.random() * 2) + 1;
+        for (let i = 0; i < numAcademics; i++) {
+            const randomIndex = Math.floor(Math.random() * academics.length);
+            selectedAcademics.push(academics[randomIndex].name);
+        }
+    } else {
+        // Fallback if no academics in database
+        const placeholderNames = ['Jacques Derrida', 'Michel Foucault', 'Judith Butler', 'Gilles Deleuze', 'Slavoj Žižek'];
+        const randomIndex = Math.floor(Math.random() * placeholderNames.length);
+        selectedAcademics.push(placeholderNames[randomIndex]);
+    }
+    
+    // Generate random date (within last year)
+    const randomDate = new Date();
+    randomDate.setDate(randomDate.getDate() - Math.floor(Math.random() * 365));
+    const formattedDate = `${randomDate.getFullYear()}-${String(randomDate.getMonth() + 1).padStart(2, '0')}-${String(randomDate.getDate()).padStart(2, '0')}`;
+    
+    // Biomimetic tile types
+    const tileTypes = [
+        {
+            type: 'detection',
+            title: 'Signal detected in',
+            description: 'Perceptual apparatus has identified patterns within'
+        },
+        {
+            type: 'connection',
+            title: 'Neural pathway between',
+            description: 'Synaptic connections established between'
+        },
+        {
+            type: 'pattern',
+            title: 'Pattern recognition in',
+            description: 'Recurring motifs identified in the corpus of'
+        },
+        {
+            type: 'stimulus',
+            title: 'Reactive threshold in',
+            description: 'Significant activation observed in response to'
+        }
+    ];
+    
+    const randomType = tileTypes[Math.floor(Math.random() * tileTypes.length)];
+    
+    // Biomimetic themes
+    const themes = [
+        'cognitive structures', 
+        'theoretical constructs',
+        'conceptual mappings', 
+        'discursive fields', 
+        'philosophical receptors'
+    ];
+    const randomTheme = themes[Math.floor(Math.random() * themes.length)];
+    
+    // Generate tile data
+    let title, description;
+    
+    if (randomType.type === 'connection' && selectedAcademics.length > 1) {
+        title = `${randomType.title} ${selectedAcademics[0]} and ${selectedAcademics[1]}`;
+        description = `${randomType.description} ${selectedAcademics[0]} and ${selectedAcademics[1]} concerning ${randomTheme}.`;
+    } else {
+        title = `${randomType.title} ${selectedAcademics[0]}`;
+        description = `${randomType.description} ${selectedAcademics[0]}'s work on ${randomTheme}.`;
+    }
+    
+    return {
+        title,
+        date: formattedDate,
+        academics: selectedAcademics,
+        description,
+        id: Date.now() + Math.random()
+    };
+}
+
+/**
+ * Create scanning effect across the mosaic grid
+ */
+function simulateScanningMosaic() {
+    const facets = document.querySelectorAll('.mosaic-facet');
+    if (facets.length === 0) return;
+    
+    // Random scan modes
+    const scanModes = ['horizontal', 'vertical', 'random', 'burst'];
+    const currentMode = scanModes[Math.floor(Math.random() * scanModes.length)];
+    
+    let activeFacets = new Set();
+    
+    // Highlight a facet temporarily
+    const highlightFacet = (facet) => {
+        facet.classList.add('scanning');
+        activeFacets.add(facet);
+        
+        setTimeout(() => {
+            facet.classList.remove('scanning');
+            activeFacets.delete(facet);
+        }, 180 + Math.random() * 220); // Variable duration for organic feel
+    };
+    
+    // Different scan patterns
+    const runScanPattern = () => {
+        switch(currentMode) {
+            case 'horizontal':
+                // Simulate row-by-row scanning
+                let row = 0;
+                const cols = Math.ceil(Math.sqrt(facets.length));
+                
+                const horizontalInterval = setInterval(() => {
+                    if (row * cols >= facets.length) {
+                        clearInterval(horizontalInterval);
+                        setTimeout(simulateScanningMosaic, 3000 + Math.random() * 2000);
+                        return;
+                    }
+                    
+                    for (let i = 0; i < cols; i++) {
+                        const index = row * cols + i;
+                        if (index < facets.length) {
+                            highlightFacet(facets[index]);
+                        }
+                    }
+                    
+                    row++;
+                }, 120);
+                break;
+                
+            case 'vertical':
+                // Simulate column-by-column scanning
+                let col = 0;
+                const rows = Math.ceil(Math.sqrt(facets.length));
+                
+                const verticalInterval = setInterval(() => {
+                    if (col >= rows) {
+                        clearInterval(verticalInterval);
+                        setTimeout(simulateScanningMosaic, 3000 + Math.random() * 2000);
+                        return;
+                    }
+                    
+                    for (let i = 0; i < rows; i++) {
+                        const index = i * rows + col;
+                        if (index < facets.length) {
+                            highlightFacet(facets[index]);
+                        }
+                    }
+                    
+                    col++;
+                }, 120);
+                break;
+                
+            case 'random':
+                // Highlight random facets
+                let count = 0;
+                const randomInterval = setInterval(() => {
+                    if (count > facets.length * 0.3) { // Only scan about 30% of facets
+                        clearInterval(randomInterval);
+                        setTimeout(simulateScanningMosaic, 2000 + Math.random() * 3000);
+                        return;
+                    }
+                    
+                    const randomIndex = Math.floor(Math.random() * facets.length);
+                    highlightFacet(facets[randomIndex]);
+                    
+                    count++;
+                }, 50);
+                break;
+                
+            case 'burst':
+                // Bursts of activity in clusters
+                const totalBursts = 3 + Math.floor(Math.random() * 3);
+                let burstCount = 0;
+                
+                const doBurst = () => {
+                    if (burstCount >= totalBursts) {
+                        setTimeout(simulateScanningMosaic, 3000 + Math.random() * 2000);
+                        return;
+                    }
+                    
+                    // Pick a center for the burst
+                    const centerIndex = Math.floor(Math.random() * facets.length);
+                    const centerFacet = facets[centerIndex];
+                    highlightFacet(centerFacet);
+                    
+                    // Highlight neighbors (approximation)
+                    const burstRadius = 2 + Math.floor(Math.random() * 3);
+                    const rowSize = Math.ceil(Math.sqrt(facets.length));
+                    
+                    for (let r = -burstRadius; r <= burstRadius; r++) {
+                        for (let c = -burstRadius; c <= burstRadius; c++) {
+                            if (r === 0 && c === 0) continue; // Skip center, already highlighted
+                            
+                            const idx = centerIndex + (r * rowSize) + c;
+                            if (idx >= 0 && idx < facets.length) {
+                                setTimeout(() => {
+                                    highlightFacet(facets[idx]);
+                                }, Math.random() * 100);
+                            }
+                        }
+                    }
+                    
+                    burstCount++;
+                    setTimeout(doBurst, 500 + Math.random() * 1000);
+                };
+                
+                doBurst();
+                break;
+        }
+    };
+    
+    runScanPattern();
+}
+
+/**
+ * Format date for display
+ */
+function formatDate(dateString) {
+    if (!dateString) return 'Unknown date';
+    
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    
+    return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+    });
+}
+
+/**
+ * Shuffle array elements (Fisher-Yates algorithm)
+ */
+function shuffleArray(array) {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+}
+
+/**
+ * Show a visual glitch effect
  */
 function showGlitchEffect() {
     const glitchElement = document.createElement('div');
