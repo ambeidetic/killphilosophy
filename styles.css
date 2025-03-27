@@ -307,6 +307,7 @@ footer {
     overflow: hidden;
     padding: 0;
     margin: 0;
+    background-color: rgba(2, 2, 2, 0.95);
 }
 
 .novelty-header {
@@ -358,6 +359,7 @@ footer {
     color: var(--glow-color);
 }
 
+/* Original novelty tiles grid */
 .novelty-tiles {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -457,6 +459,185 @@ footer {
     font-size: 11px;
     color: var(--glow-color);
     margin-top: 5px;
+}
+
+/* Fly's Eye Mosaic Grid Structure for Novelty Tiles */
+.mosaic-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 2px;
+    padding: 4px;
+    width: 100%;
+    height: calc(100% - 55px); /* Minus header */
+    overflow-y: auto;
+    background-color: rgba(0, 0, 0, 0.98);
+}
+
+/* Individual facet styling */
+.mosaic-facet {
+    position: relative;
+    aspect-ratio: 1/1; /* Square ratio for grid-like appearance */
+    border: 1px solid var(--accent-color);
+    background-color: rgba(10, 10, 10, 0.9);
+    padding: 8px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    animation: pulseReceptor 8s infinite both;
+    animation-delay: calc(var(--facet-index) * 0.1s);
+    filter: contrast(var(--filter-strength)) brightness(var(--sensitivity));
+}
+
+/* Pulse animation */
+@keyframes pulseReceptor {
+    0%, 100% { 
+        filter: contrast(var(--filter-strength)) brightness(calc(var(--sensitivity) * 0.85));
+    }
+    50% { 
+        filter: contrast(var(--filter-strength)) brightness(var(--sensitivity));
+    }
+}
+
+/* Hover effect */
+.mosaic-facet:hover {
+    border-color: var(--terminal-green);
+    box-shadow: 0 0 10px rgba(30, 250, 24, 0.3);
+    filter: contrast(1.1) brightness(1.2) !important;
+    z-index: 2;
+}
+
+/* Scanning effect class */
+.mosaic-facet.scanning {
+    animation: scanPulse 0.3s ease;
+    border-color: var(--terminal-amber);
+    z-index: 3;
+}
+
+@keyframes scanPulse {
+    0% { 
+        filter: contrast(1) brightness(1);
+    }
+    50% { 
+        filter: contrast(1.3) brightness(1.4);
+    }
+    100% { 
+        filter: contrast(1) brightness(1);
+    }
+}
+
+/* Facet surface with subtle gradient */
+.facet-surface {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Tile content */
+.tile-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    font-size: 10px;
+    line-height: 1.2;
+    overflow: hidden;
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+    letter-spacing: -0.2px;
+}
+
+.mosaic-facet:hover .tile-content {
+    opacity: 1;
+}
+
+/* Highlight effect on hover */
+.facet-highlight {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, transparent 48%, rgba(255, 255, 255, 0.1) 50%, transparent 52%);
+    z-index: 1;
+    opacity: 0;
+    transform: translateY(100%);
+    transition: transform 0.5s ease, opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.mosaic-facet:hover .facet-highlight {
+    opacity: 0.4;
+    transform: translateY(-100%);
+}
+
+/* Tile header, title, dates styling for mosaic */
+.tile-header {
+    margin-bottom: 6px;
+}
+
+.tile-title {
+    font-weight: bold;
+    font-size: 12px;
+    color: var(--terminal-amber);
+    margin-bottom: 4px;
+    text-shadow: 0 0 5px rgba(255, 176, 0, 0.3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tile-date {
+    font-size: 9px;
+    color: var(--link-color);
+}
+
+/* Academics list */
+.tile-academics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 6px;
+    max-width: 100%;
+}
+
+.tile-academic {
+    color: var(--terminal-green);
+    cursor: pointer;
+    white-space: nowrap;
+    text-shadow: 0 0 3px rgba(30, 250, 24, 0.3);
+}
+
+.tile-academic:hover {
+    text-shadow: 0 0 5px rgba(30, 250, 24, 0.7);
+    text-decoration: underline;
+}
+
+.academic-separator {
+    color: var(--link-color);
+    margin: 0 2px;
+}
+
+/* Description */
+.tile-description {
+    font-size: 9px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    -webkit-box-orient: vertical;
+    position: relative;
+}
+
+.tile-description::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 15px;
+    background: linear-gradient(transparent, rgba(10, 10, 10, 0.9));
 }
 
 /* Other sections - make them take the full screen when visible */
@@ -847,6 +1028,10 @@ input:focus, textarea:focus, select:focus {
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     }
     
+    .mosaic-grid {
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    }
+    
     .novelty-header {
         flex-direction: column;
         align-items: flex-start;
@@ -860,6 +1045,14 @@ input:focus, textarea:focus, select:focus {
     .novelty-search-box {
         width: 100%;
     }
+    
+    .tile-title {
+        font-size: 10px;
+    }
+    
+    .tile-description {
+        -webkit-line-clamp: 4;
+    }
 }
 
 @media (max-width: 480px) {
@@ -869,6 +1062,17 @@ input:focus, textarea:focus, select:focus {
     
     .novelty-tile {
         height: 150px;
+    }
+    
+    .mosaic-grid {
+        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    }
+}
+
+/* Responsive sizing - for larger screens, show more columns */
+@media (min-width: 1200px) {
+    .mosaic-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
     }
 }
 
