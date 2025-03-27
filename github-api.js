@@ -1,721 +1,427 @@
-/**
- * GitHub API Integration for KillPhilosophy
- * 
- * This module handles interactions with the GitHub API for storing and retrieving
- * the academic database. It manages authentication, file operations, and pull requests.
- */
+// GitHub API integration for KillPhilosophy
 
+/**
+ * GitHub Manager for handling repository interactions
+ */
 class GitHubManager {
     constructor() {
-        this.apiBaseUrl = 'https://api.github.com';
-        this.repoOwner = 'ambeidetic';
-        this.repoName = 'killphilosophy';
-        this.token = null;
-        this.isAuthenticated = false;
-        this.branchName = 'main';
-        
-        // Log for operations
-        this.operationLog = [];
-        
-        // Load settings from localStorage
-        this._loadSettings();
-    }
-    
-    /**
-     * Load GitHub settings from localStorage
-     * @private
-     */
-    _loadSettings() {
-        try {
-            const repoString = localStorage.getItem('killphilosophy_github_repo');
-            const token = localStorage.getItem('killphilosophy_github_token');
-            
-            if (repoString) {
-                const [owner, name] = repoString.split('/');
-                this.repoOwner = owner;
-                this.repoName = name;
-            }
-            
-            if (token) {
-                this.token = token;
-                this.isAuthenticated = true;
-            }
-        } catch (error) {
-            console.error('Error loading GitHub settings:', error);
-        }
-    }
-    
-    /**
-     * Save GitHub settings to localStorage
-     */
-    saveSettings(repoOwner, repoName, token = null) {
-        this.repoOwner = repoOwner;
-        this.repoName = repoName;
-        
-        if (token) {
-            this.token = token;
-            this.isAuthenticated = true;
-        }
-        
-        try {
-            localStorage.setItem('killphilosophy_github_repo', `${repoOwner}/${repoName}`);
-            if (token) {
-                localStorage.setItem('killphilosophy_github_token', token);
-            }
-        } catch (error) {
-            console.error('Error saving GitHub settings:', error);
-        }
-        
-        return true;
-    }
-    
-    /**
-     * Log an operation with timestamp
-     * @param {string} message - Operation message
-     * @param {string} type - Log type ('info', 'error', 'success')
-     */
-    log(message, type = 'info') {
-        const timestamp = new Date().toISOString();
-        const logEntry = {
-            timestamp,
-            message,
-            type
+        this.username = 'killphilosophy';
+        this.repoName = 'academic-database';
+        this.baseApiUrl = 'https://api.github.com';
+        this.contributors = [];
+        this.lastCommit = null;
+        this.repoStats = {
+            stars: 0,
+            forks: 0,
+            openIssues: 0
         };
         
-        this.operationLog.unshift(logEntry);
-        
-        // Keep log size manageable
-        if (this.operationLog.length > 100) {
-            this.operationLog = this.operationLog.slice(0, 100);
-        }
-        
-        // Update log display if element exists
-        const logElement = document.getElementById('github-log-content');
-        if (logElement) {
-            this._updateLogDisplay();
-        }
-    }
-    
-    /**
-     * Update the log display
-     * @private
-     */
-    _updateLogDisplay() {
-        const logElement = document.getElementById('github-log-content');
-        if (!logElement) return;
-        
-        logElement.innerHTML = this.operationLog.map(entry => {
-            const timeString = new Date(entry.timestamp).toLocaleTimeString();
-            let classString = '';
-            
-            if (entry.type === 'error') classString = 'log-error';
-            if (entry.type === 'success') classString = 'log-success';
-            
-            return `<div class="log-entry ${classString}">[${timeString}] ${entry.message}</div>`;
-        }).join('');
-    }
-    
-    /**
-     * Generate headers for API requests
-     * @param {boolean} includeAuth - Whether to include authentication
-     * @returns {Object} - Headers object
-     * @private
-     */
-    _getHeaders(includeAuth = true) {
-        const headers = {
-            'Accept': 'application/vnd.github.v3+json',
-            'Content-Type': 'application/json'
+        // Cache settings
+        this.cacheTimeout = 30 * 60 * 1000; // 30 minutes
+        this.lastFetch = {
+            contributors: 0,
+            commits: 0,
+            stats: 0
         };
-        
-        if (includeAuth && this.token) {
-            headers['Authorization'] = `token ${this.token}`;
-        }
-        
-        return headers;
     }
     
     /**
-     * Make a request to the GitHub API
-     * @param {string} endpoint - API endpoint
-     * @param {Object} options - Fetch options
-     * @returns {Promise<Object>} - Response data
-     * @private
+     * Initialize GitHub status information
      */
-    async _request(endpoint, options = {}) {
-        const url = `${this.apiBaseUrl}${endpoint}`;
-        
+    async init() {
         try {
-            const response = await fetch(url, options);
+            console.log('Initializing GitHub manager...');
             
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(`GitHub API error (${response.status}): ${errorData.message || response.statusText}`);
-            }
+            // Load cached data from localStorage
+            this._loadFromCache();
             
-            // Check if response is JSON
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                return await response.json();
-            }
+            // Fetch fresh data
+            await Promise.all([
+                this.fetchContributors(),
+                this.fetchLastCommit(),
+                this.fetchRepoStats()
+            ]);
             
-            return await response.text();
-        } catch (error) {
-            this.log(`API Error: ${error.message}`, 'error');
-            throw error;
-        }
-    }
-    
-    /**
-     * Check if the repository exists and is accessible
-     * @returns {Promise<boolean>} - Whether the repository is accessible
-     */
-    async checkRepository() {
-        if (!this.repoOwner || !this.repoName) {
-            this.log('Repository information is incomplete', 'error');
-            return false;
-        }
-        
-        try {
-            const endpoint = `/repos/${this.repoOwner}/${this.repoName}`;
-            const options = {
-                method: 'GET',
-                headers: this._getHeaders(this.isAuthenticated)
-            };
+            // Update the UI
+            this.updateGitHubUI();
             
-            await this._request(endpoint, options);
-            this.log(`Successfully connected to repository ${this.repoOwner}/${this.repoName}`, 'success');
+            console.log('GitHub manager initialized successfully');
             return true;
         } catch (error) {
-            this.log(`Repository check failed: ${error.message}`, 'error');
+            console.error('Failed to initialize GitHub manager:', error);
             return false;
         }
     }
     
     /**
-     * Get the repository structure
-     * @returns {Promise<Object>} - Repository structure
+     * Load cached data from localStorage
      */
-    async getRepositoryStructure() {
+    _loadFromCache() {
         try {
-            const endpoint = `/repos/${this.repoOwner}/${this.repoName}/contents`;
-            const options = {
-                method: 'GET',
-                headers: this._getHeaders(this.isAuthenticated)
-            };
-            
-            const contents = await this._request(endpoint, options);
-            return contents;
-        } catch (error) {
-            this.log(`Failed to get repository structure: ${error.message}`, 'error');
-            throw error;
-        }
-    }
-    
-    /**
-     * Get a file from the repository
-     * @param {string} path - File path
-     * @returns {Promise<Object>} - File content and metadata
-     */
-    async getFile(path) {
-        try {
-            const endpoint = `/repos/${this.repoOwner}/${this.repoName}/contents/${path}`;
-            const options = {
-                method: 'GET',
-                headers: this._getHeaders(this.isAuthenticated)
-            };
-            
-            const fileData = await this._request(endpoint, options);
-            
-            // Decode content if it's base64 encoded
-            if (fileData.content && fileData.encoding === 'base64') {
-                fileData.decodedContent = atob(fileData.content.replace(/\n/g, ''));
-            }
-            
-            return fileData;
-        } catch (error) {
-            this.log(`Failed to get file ${path}: ${error.message}`, 'error');
-            throw error;
-        }
-    }
-    
-    /**
-     * Create or update a file in the repository
-     * @param {string} path - File path
-     * @param {string} content - File content
-     * @param {string} message - Commit message
-     * @param {string} sha - SHA of the file being replaced (for updates)
-     * @returns {Promise<Object>} - Commit data
-     */
-    async createOrUpdateFile(path, content, message, sha = null) {
-        if (!this.isAuthenticated) {
-            this.log('Authentication required to create or update files', 'error');
-            throw new Error('Authentication required');
-        }
-        
-        try {
-            const endpoint = `/repos/${this.repoOwner}/${this.repoName}/contents/${path}`;
-            
-            const requestBody = {
-                message,
-                content: btoa(content),
-                branch: this.branchName
-            };
-            
-            if (sha) {
-                requestBody.sha = sha;
-            }
-            
-            const options = {
-                method: 'PUT',
-                headers: this._getHeaders(),
-                body: JSON.stringify(requestBody)
-            };
-            
-            const response = await this._request(endpoint, options);
-            
-            this.log(`Successfully ${sha ? 'updated' : 'created'} file ${path}`, 'success');
-            return response;
-        } catch (error) {
-            this.log(`Failed to ${sha ? 'update' : 'create'} file ${path}: ${error.message}`, 'error');
-            throw error;
-        }
-    }
-    
-    /**
-     * Get the database file from the repository
-     * @returns {Promise<Object>} - Database data
-     */
-    async getDatabase() {
-        try {
-            const fileData = await this.getFile('database/academics.json');
-            
-            if (fileData.decodedContent) {
-                return JSON.parse(fileData.decodedContent);
-            }
-            
-            throw new Error('Could not decode database file');
-        } catch (error) {
-            // If file doesn't exist, return empty database
-            if (error.message.includes('404')) {
-                this.log('Database file does not exist yet, will be created on first save', 'info');
-                return { academics: {}, noveltyTiles: [], taxonomyCategories: {} };
-            }
-            
-            this.log(`Failed to get database: ${error.message}`, 'error');
-            throw error;
-        }
-    }
-    
-    /**
-     * Save the database to the repository
-     * @param {Object} databaseData - Database data
-     * @returns {Promise<boolean>} - Success indicator
-     */
-    async saveDatabase(databaseData) {
-        if (!this.isAuthenticated) {
-            this.log('Authentication required to save database', 'error');
-            return false;
-        }
-        
-        try {
-            // Check if database file exists
-            let sha = null;
-            try {
-                const fileData = await this.getFile('database/academics.json');
-                sha = fileData.sha;
-            } catch (error) {
-                // File doesn't exist, will be created
-                this.log('Database file will be created', 'info');
-            }
-            
-            // Create or update database file
-            const content = JSON.stringify(databaseData, null, 2);
-            const message = 'Update academic database';
-            
-            await this.createOrUpdateFile('database/academics.json', content, message, sha);
-            
-            this.log('Database saved successfully', 'success');
-            return true;
-        } catch (error) {
-            this.log(`Failed to save database: ${error.message}`, 'error');
-            return false;
-        }
-    }
-    
-    /**
-     * Create a fork of the repository
-     * @returns {Promise<Object>} - Fork data
-     */
-    async createFork() {
-        if (!this.isAuthenticated) {
-            this.log('Authentication required to create fork', 'error');
-            throw new Error('Authentication required');
-        }
-        
-        try {
-            const endpoint = `/repos/${this.repoOwner}/${this.repoName}/forks`;
-            const options = {
-                method: 'POST',
-                headers: this._getHeaders()
-            };
-            
-            const response = await this._request(endpoint, options);
-            
-            this.log(`Repository forked successfully to ${response.full_name}`, 'success');
-            return response;
-        } catch (error) {
-            this.log(`Failed to create fork: ${error.message}`, 'error');
-            throw error;
-        }
-    }
-    
-    /**
-     * Create a new branch
-     * @param {string} branchName - Branch name
-     * @param {string} fromBranch - Branch to create from
-     * @returns {Promise<Object>} - Branch data
-     */
-    async createBranch(branchName, fromBranch = 'main') {
-        if (!this.isAuthenticated) {
-            this.log('Authentication required to create branch', 'error');
-            throw new Error('Authentication required');
-        }
-        
-        try {
-            // Get the SHA of the latest commit on the source branch
-            const endpoint = `/repos/${this.repoOwner}/${this.repoName}/git/refs/heads/${fromBranch}`;
-            const options = {
-                method: 'GET',
-                headers: this._getHeaders()
-            };
-            
-            const sourceRef = await this._request(endpoint, options);
-            const sha = sourceRef.object.sha;
-            
-            // Create the new branch
-            const createEndpoint = `/repos/${this.repoOwner}/${this.repoName}/git/refs`;
-            const createOptions = {
-                method: 'POST',
-                headers: this._getHeaders(),
-                body: JSON.stringify({
-                    ref: `refs/heads/${branchName}`,
-                    sha
-                })
-            };
-            
-            const response = await this._request(createEndpoint, createOptions);
-            
-            this.log(`Branch ${branchName} created successfully`, 'success');
-            return response;
-        } catch (error) {
-            this.log(`Failed to create branch: ${error.message}`, 'error');
-            throw error;
-        }
-    }
-    
-    /**
-     * Create a pull request
-     * @param {string} title - PR title
-     * @param {string} body - PR description
-     * @param {string} head - Head branch
-     * @param {string} base - Base branch
-     * @returns {Promise<Object>} - Pull request data
-     */
-    async createPullRequest(title, body, head, base = 'main') {
-        if (!this.isAuthenticated) {
-            this.log('Authentication required to create pull request', 'error');
-            throw new Error('Authentication required');
-        }
-        
-        try {
-            const endpoint = `/repos/${this.repoOwner}/${this.repoName}/pulls`;
-            const options = {
-                method: 'POST',
-                headers: this._getHeaders(),
-                body: JSON.stringify({
-                    title,
-                    body,
-                    head,
-                    base
-                })
-            };
-            
-            const response = await this._request(endpoint, options);
-            
-            this.log(`Pull request created successfully: "${title}"`, 'success');
-            return response;
-        } catch (error) {
-            this.log(`Failed to create pull request: ${error.message}`, 'error');
-            throw error;
-        }
-    }
-    
-    /**
-     * Submit academic information as a pull request
-     * @param {string} academicName - Academic name
-     * @param {string} infoType - Type of information
-     * @param {Object} infoData - Information data
-     * @param {string} username - GitHub username
-     * @returns {Promise<Object>} - Pull request data
-     */
-    async submitAcademicInfo(academicName, infoType, infoData, username = 'anonymous') {
-        if (!this.repoOwner || !this.repoName) {
-            this.log('Repository information is incomplete', 'error');
-            return {
-                success: false,
-                message: 'Repository information is incomplete'
-            };
-        }
-        
-        try {
-            // Generate a unique branch name
-            const timestamp = Date.now();
-            const sanitizedAcademicName = academicName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
-            const branchName = `contribution/${sanitizedAcademicName}-${infoType}-${timestamp}`;
-            
-            // For unauthenticated users, we'll just return a simulated result
-            if (!this.isAuthenticated) {
-                this.log('Simulating pull request creation (no authentication)', 'info');
-                return {
-                    success: true,
-                    simulated: true,
-                    message: 'Contribution recorded locally. Connect with GitHub to submit directly to the repository.',
-                    prTitle: `Add ${infoType} to ${academicName}`,
-                    branchName
-                };
-            }
-            
-            // If authenticated, create an actual pull request
-            
-            // 1. Get the current database
-            let database;
-            try {
-                database = await this.getDatabase();
-            } catch (error) {
-                // If database doesn't exist, create a basic structure
-                database = {
-                    academics: {},
-                    noveltyTiles: [],
-                    taxonomyCategories: {}
-                };
-            }
-            
-            // 2. Create a new branch
-            await this.createBranch(branchName);
-            this.branchName = branchName; // Set current branch for subsequent operations
-            
-            // 3. Update the academic in the database
-            const normalizedName = academicName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
-            
-            if (!database.academics[normalizedName]) {
-                database.academics[normalizedName] = {
-                    name: academicName,
-                    papers: [],
-                    events: [],
-                    connections: [],
-                    taxonomies: {}
-                };
-            }
-            
-            // Add info based on type
-            switch (infoType) {
-                case 'paper':
-                    database.academics[normalizedName].papers.push(infoData);
-                    break;
-                case 'event':
-                    database.academics[normalizedName].events.push(infoData);
-                    break;
-                case 'connection':
-                    database.academics[normalizedName].connections.push(infoData);
-                    break;
-                case 'taxonomy':
-                    const { category, value } = infoData;
-                    if (!database.academics[normalizedName].taxonomies[category]) {
-                        database.academics[normalizedName].taxonomies[category] = [];
-                    }
-                    database.academics[normalizedName].taxonomies[category].push(value);
-                    break;
-            }
-            
-            // 4. Save the updated database
-            await this.saveDatabase(database);
-            
-            // 5. Create a pull request
-            const prTitle = `Add ${infoType} to ${academicName}`;
-            let prBody = `This pull request adds new ${infoType} information to ${academicName}.
-
-Information details:
-\`\`\`json
-${JSON.stringify(infoData, null, 2)}
-\`\`\`
-
-Contributed by: ${username}`;
-
-            const pullRequest = await this.createPullRequest(prTitle, prBody, branchName);
-            
-            // Reset to main branch
-            this.branchName = 'main';
-            
-            return {
-                success: true,
-                message: 'Contribution submitted as a pull request',
-                pullRequest
-            };
-        } catch (error) {
-            this.log(`Failed to submit academic info: ${error.message}`, 'error');
-            this.branchName = 'main'; // Reset to main branch
-            
-            return {
-                success: false,
-                message: `Failed to submit information: ${error.message}`
-            };
-        }
-    }
-    
-    /**
-     * Get open pull requests
-     * @returns {Promise<Array>} - Array of pull requests
-     */
-    async getPullRequests() {
-        try {
-            const endpoint = `/repos/${this.repoOwner}/${this.repoName}/pulls?state=open`;
-            const options = {
-                method: 'GET',
-                headers: this._getHeaders(this.isAuthenticated)
-            };
-            
-            const pullRequests = await this._request(endpoint, options);
-            
-            this.log(`Retrieved ${pullRequests.length} open pull requests`, 'success');
-            return pullRequests;
-        } catch (error) {
-            this.log(`Failed to get pull requests: ${error.message}`, 'error');
-            return [];
-        }
-    }
-    
-    /**
-     * Sync local database with GitHub (if authenticated)
-     * @param {Object} localDatabase - Local database object
-     * @returns {Promise<Object>} - Sync result
-     */
-    async syncDatabase(localDatabase) {
-        if (!this.isAuthenticated) {
-            this.log('Authentication required to sync database', 'error');
-            return {
-                success: false,
-                message: 'Authentication required'
-            };
-        }
-        
-        try {
-            // Get the remote database
-            let remoteDatabase;
-            try {
-                remoteDatabase = await this.getDatabase();
-                this.log('Retrieved remote database', 'success');
-            } catch (error) {
-                // If remote database doesn't exist, use the local one
-                remoteDatabase = {
-                    academics: {},
-                    noveltyTiles: [],
-                    taxonomyCategories: {}
-                };
-                this.log('Remote database not found, will create from local', 'info');
-            }
-            
-            // Check if the local database is newer or has more entries
-            const localAcademicCount = Object.keys(localDatabase.academics).length;
-            const remoteAcademicCount = Object.keys(remoteDatabase.academics).length;
-            
-            // If local has more entries, push to remote
-            if (localAcademicCount > remoteAcademicCount) {
-                this.log(`Local database has ${localAcademicCount} academics, remote has ${remoteAcademicCount}. Pushing to remote.`, 'info');
-                await this.saveDatabase(localDatabase);
-                return {
-                    success: true,
-                    message: 'Local database pushed to remote',
-                    operation: 'push'
-                };
-            }
-            // If remote has more entries, pull to local
-            else if (remoteAcademicCount > localAcademicCount) {
-                this.log(`Remote database has ${remoteAcademicCount} academics, local has ${localAcademicCount}. Pulling to local.`, 'info');
-                return {
-                    success: true,
-                    message: 'Remote database pulled to local',
-                    operation: 'pull',
-                    database: remoteDatabase
-                };
-            }
-            // If they have the same number of entries, merge changes
-            else {
-                this.log('Merging local and remote databases', 'info');
+            const cachedData = localStorage.getItem('killphilosophy_github_cache');
+            if (cachedData) {
+                const data = JSON.parse(cachedData);
                 
-                // Simple merge strategy: combine academics from both
-                const mergedAcademics = {...remoteDatabase.academics};
-                
-                // For each local academic, update or add to merged
-                for (const [key, academic] of Object.entries(localDatabase.academics)) {
-                    if (mergedAcademics[key]) {
-                        // Merge papers, events, connections if local has more
-                        if (academic.papers?.length > mergedAcademics[key].papers?.length) {
-                            mergedAcademics[key].papers = academic.papers;
-                        }
-                        if (academic.events?.length > mergedAcademics[key].events?.length) {
-                            mergedAcademics[key].events = academic.events;
-                        }
-                        if (academic.connections?.length > mergedAcademics[key].connections?.length) {
-                            mergedAcademics[key].connections = academic.connections;
-                        }
-                        
-                        // Merge taxonomies
-                        if (academic.taxonomies) {
-                            mergedAcademics[key].taxonomies = mergedAcademics[key].taxonomies || {};
-                            for (const [category, values] of Object.entries(academic.taxonomies)) {
-                                mergedAcademics[key].taxonomies[category] = mergedAcademics[key].taxonomies[category] || [];
-                                // Add any values not already in the remote
-                                for (const value of values) {
-                                    if (!mergedAcademics[key].taxonomies[category].includes(value)) {
-                                        mergedAcademics[key].taxonomies[category].push(value);
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        // Academic doesn't exist in remote, add it
-                        mergedAcademics[key] = academic;
-                    }
+                if (data.contributors) {
+                    this.contributors = data.contributors;
+                    this.lastFetch.contributors = data.timestamps.contributors || 0;
                 }
                 
-                // Create merged database
-                const mergedDatabase = {
-                    academics: mergedAcademics,
-                    noveltyTiles: localDatabase.noveltyTiles.length > remoteDatabase.noveltyTiles.length 
-                        ? localDatabase.noveltyTiles 
-                        : remoteDatabase.noveltyTiles,
-                    taxonomyCategories: {...remoteDatabase.taxonomyCategories}
-                };
+                if (data.lastCommit) {
+                    this.lastCommit = data.lastCommit;
+                    this.lastFetch.commits = data.timestamps.commits || 0;
+                }
                 
-                // Save merged database to remote
-                await this.saveDatabase(mergedDatabase);
+                if (data.repoStats) {
+                    this.repoStats = data.repoStats;
+                    this.lastFetch.stats = data.timestamps.stats || 0;
+                }
                 
-                return {
-                    success: true,
-                    message: 'Databases merged and saved',
-                    operation: 'merge',
-                    database: mergedDatabase
-                };
+                console.log('Loaded GitHub data from cache');
             }
         } catch (error) {
-            this.log(`Database sync failed: ${error.message}`, 'error');
-            return {
-                success: false,
-                message: `Sync failed: ${error.message}`
+            console.error('Error loading GitHub cache:', error);
+        }
+    }
+    
+    /**
+     * Save data to localStorage cache
+     */
+    _saveToCache() {
+        try {
+            const cacheData = {
+                contributors: this.contributors,
+                lastCommit: this.lastCommit,
+                repoStats: this.repoStats,
+                timestamps: this.lastFetch
             };
+            
+            localStorage.setItem('killphilosophy_github_cache', JSON.stringify(cacheData));
+            console.log('Saved GitHub data to cache');
+        } catch (error) {
+            console.error('Error saving GitHub cache:', error);
+        }
+    }
+    
+    /**
+     * Check if cache is still valid for a specific data type
+     */
+    _isCacheValid(dataType) {
+        const now = Date.now();
+        return now - this.lastFetch[dataType] < this.cacheTimeout;
+    }
+    
+    /**
+     * Fetch repository contributors
+     */
+    async fetchContributors() {
+        // Check cache first
+        if (this._isCacheValid('contributors')) {
+            console.log('Using cached contributors data');
+            return this.contributors;
+        }
+        
+        try {
+            const url = `${this.baseApiUrl}/repos/${this.username}/${this.repoName}/contributors`;
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`GitHub API returned ${response.status}`);
+            }
+            
+            const data = await response.json();
+            this.contributors = data.map(contributor => ({
+                username: contributor.login,
+                avatar: contributor.avatar_url,
+                contributions: contributor.contributions,
+                url: contributor.html_url
+            }));
+            
+            this.lastFetch.contributors = Date.now();
+            this._saveToCache();
+            
+            console.log(`Fetched ${this.contributors.length} contributors`);
+            return this.contributors;
+        } catch (error) {
+            console.error('Error fetching contributors:', error);
+            return this.contributors; // Return cached data on error
+        }
+    }
+    
+    /**
+     * Fetch the last commit information
+     */
+    async fetchLastCommit() {
+        // Check cache first
+        if (this._isCacheValid('commits')) {
+            console.log('Using cached commit data');
+            return this.lastCommit;
+        }
+        
+        try {
+            const url = `${this.baseApiUrl}/repos/${this.username}/${this.repoName}/commits?per_page=1`;
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`GitHub API returned ${response.status}`);
+            }
+            
+            const data = await response.json();
+            if (data.length > 0) {
+                const commit = data[0];
+                this.lastCommit = {
+                    sha: commit.sha,
+                    message: commit.commit.message,
+                    author: commit.commit.author.name,
+                    date: commit.commit.author.date,
+                    url: commit.html_url
+                };
+            }
+            
+            this.lastFetch.commits = Date.now();
+            this._saveToCache();
+            
+            console.log('Fetched last commit information');
+            return this.lastCommit;
+        } catch (error) {
+            console.error('Error fetching last commit:', error);
+            return this.lastCommit; // Return cached data on error
+        }
+    }
+    
+    /**
+     * Fetch repository statistics
+     */
+    async fetchRepoStats() {
+        // Check cache first
+        if (this._isCacheValid('stats')) {
+            console.log('Using cached repo stats');
+            return this.repoStats;
+        }
+        
+        try {
+            const url = `${this.baseApiUrl}/repos/${this.username}/${this.repoName}`;
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`GitHub API returned ${response.status}`);
+            }
+            
+            const data = await response.json();
+            this.repoStats = {
+                stars: data.stargazers_count,
+                forks: data.forks_count,
+                openIssues: data.open_issues_count
+            };
+            
+            this.lastFetch.stats = Date.now();
+            this._saveToCache();
+            
+            console.log('Fetched repository statistics');
+            return this.repoStats;
+        } catch (error) {
+            console.error('Error fetching repo stats:', error);
+            return this.repoStats; // Return cached data on error
+        }
+    }
+    
+    /**
+     * Update the GitHub UI elements with the fetched data
+     */
+    updateGitHubUI() {
+        // Contributors section
+        const contributorsContainer = document.getElementById('github-contributors');
+        if (contributorsContainer) {
+            contributorsContainer.innerHTML = '';
+            
+            if (this.contributors.length > 0) {
+                this.contributors.forEach(contributor => {
+                    const contributorElement = document.createElement('div');
+                    contributorElement.className = 'github-contributor';
+                    contributorElement.innerHTML = `
+                        <img src="${contributor.avatar}" alt="${contributor.username}" class="contributor-avatar">
+                        <div class="contributor-info">
+                            <div class="contributor-username">${contributor.username}</div>
+                            <div class="contributor-stats">${contributor.contributions} contributions</div>
+                        </div>
+                    `;
+                    contributorsContainer.appendChild(contributorElement);
+                });
+            } else {
+                contributorsContainer.innerHTML = '<div class="empty-list">No contributors data available</div>';
+            }
+        }
+        
+        // Last commit section
+        const lastCommitContainer = document.getElementById('github-last-commit');
+        if (lastCommitContainer && this.lastCommit) {
+            const date = new Date(this.lastCommit.date);
+            const formattedDate = date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            lastCommitContainer.innerHTML = `
+                <div class="commit-message">${this.lastCommit.message}</div>
+                <div class="commit-details">
+                    <span class="commit-author">${this.lastCommit.author}</span>
+                    <span class="commit-date">${formattedDate}</span>
+                </div>
+                <a href="${this.lastCommit.url}" class="commit-link" target="_blank">View on GitHub</a>
+            `;
+        } else if (lastCommitContainer) {
+            lastCommitContainer.innerHTML = '<div class="empty-list">No commit data available</div>';
+        }
+        
+        // Repository stats section
+        const statsContainer = document.getElementById('github-stats');
+        if (statsContainer) {
+            statsContainer.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-value">${this.repoStats.stars}</div>
+                    <div class="stat-label">Stars</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${this.repoStats.forks}</div>
+                    <div class="stat-label">Forks</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${this.repoStats.openIssues}</div>
+                    <div class="stat-label">Open Issues</div>
+                </div>
+            `;
+        }
+    }
+    
+    /**
+     * Submit an issue to the repository
+     */
+    async submitIssue(title, body, labels = []) {
+        if (!title || !body) {
+            console.error('Title and body are required for submitting an issue');
+            return false;
+        }
+        
+        try {
+            // In a real implementation, this would make an API call to create an issue
+            // For now, we'll just simulate success
+            console.log('Submitting issue:', { title, body, labels });
+            
+            // Simulate API delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            console.log('Issue submitted successfully');
+            return true;
+        } catch (error) {
+            console.error('Error submitting issue:', error);
+            return false;
         }
     }
 }
 
-// Initialize GitHub manager
+// Initialize the GitHub manager
 const githubManager = new GitHubManager();
+
+/**
+ * Function to initialize GitHub status information
+ */
+async function initializeGitHubStatus() {
+    try {
+        const success = await githubManager.init();
+        
+        if (success) {
+            console.log('GitHub status initialized successfully');
+            
+            // Setup event listeners for GitHub-related UI elements
+            setupGitHubEventListeners();
+        } else {
+            console.warn('GitHub status initialization failed');
+        }
+    } catch (error) {
+        console.error('Error initializing GitHub status:', error);
+    }
+}
+
+/**
+ * Setup event listeners for GitHub-related UI elements
+ */
+function setupGitHubEventListeners() {
+    // Submit issue form
+    const submitIssueForm = document.getElementById('submit-issue-form');
+    const submitIssueButton = document.getElementById('submit-issue-button');
+    
+    if (submitIssueForm && submitIssueButton) {
+        submitIssueButton.addEventListener('click', async (e) => {
+            e.preventDefault();
+            
+            const titleInput = document.getElementById('issue-title');
+            const bodyInput = document.getElementById('issue-body');
+            
+            if (!titleInput || !bodyInput) {
+                console.error('Issue form inputs not found');
+                return;
+            }
+            
+            const title = titleInput.value.trim();
+            const body = bodyInput.value.trim();
+            
+            if (!title) {
+                alert('Please enter an issue title');
+                return;
+            }
+            
+            if (!body) {
+                alert('Please enter an issue description');
+                return;
+            }
+            
+            // Disable the button and show loading state
+            submitIssueButton.disabled = true;
+            submitIssueButton.textContent = 'Submitting...';
+            
+            const success = await githubManager.submitIssue(title, body);
+            
+            if (success) {
+                alert('Issue submitted successfully!');
+                titleInput.value = '';
+                bodyInput.value = '';
+            } else {
+                alert('Failed to submit issue. Please try again later.');
+            }
+            
+            // Reset button state
+            submitIssueButton.disabled = false;
+            submitIssueButton.textContent = 'Submit Issue';
+        });
+    }
+    
+    // Refresh GitHub data button
+    const refreshGitHubButton = document.getElementById('refresh-github-data');
+    if (refreshGitHubButton) {
+        refreshGitHubButton.addEventListener('click', async () => {
+            refreshGitHubButton.disabled = true;
+            refreshGitHubButton.textContent = 'Refreshing...';
+            
+            try {
+                await Promise.all([
+                    githubManager.fetchContributors(),
+                    githubManager.fetchLastCommit(),
+                    githubManager.fetchRepoStats()
+                ]);
+                
+                githubManager.updateGitHubUI();
+                
+                alert('GitHub data refreshed!');
+            } catch (error) {
+                console.error('Error refreshing GitHub data:', error);
+                alert('Failed to refresh GitHub data. Please try again later.');
+            }
+            
+            refreshGitHubButton.disabled = false;
+            refreshGitHubButton.textContent = 'Refresh Data';
+        });
+    }
+}
