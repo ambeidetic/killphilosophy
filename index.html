@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KillPhilosophy</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Favicon -->
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <header>
+        <div class="logo">killphilosophy.com</div>
+        <nav>
+            <a href="#" id="nav-search">Search</a>
+            <a href="#" id="nav-database">Database</a>
+            <a href="#" id="nav-novelty-tiles">Novelty Tiles</a>
+            <a href="#" id="nav-deep-search">Deep Search</a>
+            <a href="#" id="nav-about">About</a>
+            <a href="#" id="nav-contribute">Contribute</a>
+            <a href="#" id="nav-admin" class="admin-link" style="display: none;">Admin</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="search-container">
+            <input type="text" class="search-box" placeholder="Search for an academic (e.g., Michel Foucault, Judith Butler, Slavoj Žižek)">
+            <div class="search-status">
+                <span class="loader"></span> <span class="search-status-text">Initiating deep search...</span>
+            </div>
+        </section>
+
+        <section class="results-container">
+            <div class="academic-profile" id="academic-profile">
+                <div class="academic-header">
+                    <div class="academic-name" id="academic-name"></div>
+                    <div class="academic-dates" id="academic-dates"></div>
+                </div>
+                <div class="academic-bio" id="academic-bio"></div>
+                
+                <div class="taxonomy-container" id="taxonomy-container">
+                    <div class="section-title">Taxonomies</div>
+                    <div id="taxonomies-list" class="taxonomies-list"></div>
+                </div>
+
+                <div class="section-title">Key Works</div>
+                <div id="papers-list"></div>
+
+                <div class="section-title">Event Appearances</div>
+                <div id="events-list"></div>
+
+                <div class="section-title">Connections to Other Academics</div>
+                <div id="connections-list"></div>
+
+                <button class="add-info-btn" id="add-info-btn">Add Information</button>
+
+                <div class="form-container" id="add-info-form">
+                    <div class="form-field">
+                        <label for="info-type">Information Type</label>
+                        <select id="info-type">
+                            <option value="paper">Paper/Publication</option>
+                            <option value="event">Event Appearance</option>
+                            <option value="connection">Connection to Another Academic</option>
+                            <option value="taxonomy">Taxonomy Tag</option>
+                        </select>
+                    </div>
+
+                    <!-- Paper Form Fields -->
+                    <div class="form-field paper-field">
+                        <label for="paper-title">Paper Title</label>
+                        <input type="text" id="paper-title">
+                    </div>
+                    <div class="form-field paper-field">
+                        <label for="paper-year">Year</label>
+                        <input type="text" id="paper-year">
+                    </div>
+                    <div class="form-field paper-field">
+                        <label for="paper-journal">Journal/Publisher</label>
+                        <input type="text" id="paper-journal">
+                    </div>
+                    <div class="form-field paper-field">
+                        <label for="paper-url">URL (optional)</label>
+                        <input type="text" id="paper-url">
+                    </div>
+
+                    <!-- Event Form Fields -->
+                    <div class="form-field event-field" style="display: none;">
+                        <label for="event-title">Event Title</label>
+                        <input type="text" id="event-title">
+                    </div>
+                    <div class="form-field event-field" style="display: none;">
+                        <label for="event-date">Date</label>
+                        <input type="text" id="event-date">
+                    </div>
+                    <div class="form-field event-field" style="display: none;">
+                        <label for="event-location">Location</label>
+                        <input type="text" id="event-location">
+                    </div>
+                    <div class="form-field event-field" style="display: none;">
+                        <label for="event-description">Description</label>
+                        <textarea id="event-description"></textarea>
+                    </div>
+
+                    <!-- Connection Form Fields -->
+                    <div class="form-field connection-field" style="display: none;">
+                        <label for="connection-name">Academic Name</label>
+                        <input type="text" id="connection-name">
+                    </div>
+                    <div class="form-field connection-field" style="display: none;">
+                        <label for="connection-type">Connection Type</label>
+                        <select id="connection-type">
+                            <option value="collaboration">Collaboration</option>
+                            <option value="influence">Influence</option>
+                            <option value="critique">Critique</option>
+                            <option value="student">Student/Teacher Relationship</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-field connection-field" style="display: none;">
+                        <label for="connection-description">Description</label>
+                        <textarea id="connection-description"></textarea>
+                    </div>
+                    
+                    <!-- Taxonomy Form Fields -->
+                    <div class="form-field taxonomy-field" style="display: none;">
+                        <label for="taxonomy-category">Taxonomy Category</label>
+                        <select id="taxonomy-category">
+                            <option value="discipline">Academic Discipline</option>
+                            <option value="tradition">Philosophical Tradition</option>
+                            <option value="era">Historical Era</option>
+                            <option value="methodology">Methodology</option>
+                            <option value="theme">Key Themes</option>
+                            <option value="custom">Custom Category</option>
+                        </select>
+                    </div>
+                    <div class="form-field taxonomy-field" style="display: none;">
+                        <label for="taxonomy-custom-category">Custom Category Name (if applicable)</label>
+                        <input type="text" id="taxonomy-custom-category">
+                    </div>
+                    <div class="form-field taxonomy-field" style="display: none;">
+                        <label for="taxonomy-value">Tag Value</label>
+                        <input type="text" id="taxonomy-value">
+                    </div>
+
+                    <div class="form-field github-field">
+                        <label>
+                            <input type="checkbox" id="contribute-to-github" checked>
+                            Contribute this information to the public database
+                        </label>
+                        <p class="github-info">Your contribution will be submitted as a pull request to the GitHub repository.</p>
+                    </div>
+
+                    <div class="form-field github-identity" style="display: none;">
+                        <label for="github-username">GitHub Username (optional)</label>
+                        <input type="text" id="github-username" placeholder="Leave blank for anonymous contribution">
+                    </div>
+
+                    <button class="submit-btn" id="submit-info">Submit</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="visualization">
+            <div class="visualization-placeholder">Connection network visualization will appear here</div>
+        </section>
+
+        <section class="database-browser" id="database-browser">
+            <div class="db-header">
+                <div class="db-title">Academic Database</div>
+            </div>
+            <div id="db-list"></div>
+        </section>
+        
+        <!-- Novelty Tiles Section -->
+        <section class="novelty-tiles-container" id="novelty-tiles-container">
+            <div class="novelty-header">
+                <div class="novelty-title">Novelty Tiles</div>
+            </div>
+            <div class="novelty-tiles" id="novelty-tiles">
+                <!-- Novelty tiles will be populated here -->
+            </div>
+        </section>
+        
+        <!-- Deep Search Section -->
+        <section class="deep-search-container" id="deep-search-container">
+            <div class="deep-search-header">
+                <div class="deep-search-title">Gemini Deep Search</div>
+            </div>
+            <div class="deep-search-form">
+                <div class="form-field">
+                    <label for="search-academic1">Academic Name</label>
+                    <input type="text" id="search-academic1" placeholder="e.g., Michel Foucault">
+                </div>
+                <div class="form-field">
+                    <label for="search-academic2">Second Academic (optional for connection analysis)</label>
+                    <input type="text" id="search-academic2" placeholder="e.g., Judith Butler">
+                </div>
+                <div class="form-field">
+                    <label for="search-depth">Search Depth</label>
+                    <select id="search-depth">
+                        <option value="basic">Basic (Quick results)</option>
+                        <option value="medium" selected>Medium (Balanced)</option>
+                        <option value="deep">Deep (Comprehensive)</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label for="search-filters">Filters</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" checked> Papers & Publications</label>
+                        <label><input type="checkbox" checked> Events & Appearances</label>
+                        <label><input type="checkbox" checked> Citations</label>
+                        <label><input type="checkbox" checked> Academic Influences</label>
+                    </div>
+                </div>
+                <button class="submit-btn" id="run-deep-search">Run Deep Search</button>
+                <div class="api-key-notice">
+                    <p>Note: Deep Search requires Gemini API access. <a href="#" id="api-key-link">Configure API Key</a></p>
+                </div>
+            </div>
+            <div class="deep-search-results" id="deep-search-results">
+                <!-- Results will appear here after search -->
+                <div class="search-status-container" style="display: none;">
+                    <p id="search-progress-text">Searching academic databases...</p>
+                    <div class="deep-search-progress">
+                        <div class="deep-search-progress-bar"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Admin Panel Section -->
+        <section class="admin-container" id="admin-container">
+            <div class="admin-header">
+                <div class="admin-title">Admin Panel</div>
+            </div>
+            <div class="admin-tabs">
+                <div class="admin-tab active" data-tab="submissions">Content Submissions</div>
+                <div class="admin-tab" data-tab="users">User Management</div>
+                <div class="admin-tab" data-tab="taxonomies">Taxonomy Management</div>
+                <div class="admin-tab" data-tab="github">GitHub Integration</div>
+                <div class="admin-tab" data-tab="settings">Site Settings</div>
+            </div>
+            
+            <!-- Submissions Panel -->
+            <div class="admin-panel active" id="panel-submissions">
+                <h3>Recent Submissions</h3>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Academic</th>
+                            <th>Submitted By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="submissions-table-body">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Users Panel -->
+            <div class="admin-panel" id="panel-users">
+                <h3>User Management</h3>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Contributions</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+                <button class="submit-btn">Add New User</button>
+            </div>
+            
+            <!-- Taxonomies Panel -->
+            <div class="admin-panel" id="panel-taxonomies">
+                <h3>Taxonomy Management</h3>
+                <div class="taxonomy-categories" id="taxonomy-categories">
+                    <!-- Populated dynamically -->
+                </div>
+                <button class="submit-btn">Add New Taxonomy Category</button>
+            </div>
+            
+            <!-- GitHub Panel -->
+            <div class="admin-panel" id="panel-github">
+                <h3>GitHub Repository Integration</h3>
+                <div class="github-status">
+                    <p>The database is stored in the GitHub repository and updated through pull requests.</p>
+                    <div class="form-field">
+                        <label for="github-repo">Repository</label>
+                        <input type="text" id="github-repo" value="username/killphilosophy.com">
+                    </div>
+                    <div class="form-field">
+                        <label for="github-token">Personal Access Token (for admin operations)</label>
+                        <input type="password" id="github-token" placeholder="Enter token to enable admin features">
+                    </div>
+                    <button class="submit-btn" id="connect-github">Connect GitHub</button>
+                </div>
+
+                <div class="github-operations" style="display: none;">
+                    <h4>Repository Operations</h4>
+                    <div class="github-actions">
+                        <button class="github-btn" id="sync-database">Sync Database</button>
+                        <button class="github-btn" id="pull-changes">Pull Changes</button>
+                        <button class="github-btn" id="view-submissions">View Pull Requests</button>
+                    </div>
+                    <div class="github-log">
+                        <h4>Operation Log</h4>
+                        <div class="log-content" id="github-log-content">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Settings Panel -->
+            <div class="admin-panel" id="panel-settings">
+                <h3>Site Settings</h3>
+                <div class="form-field">
+                    <label for="site-name">Site Name</label>
+                    <input type="text" id="site-name" value="killphilosophy.com">
+                </div>
+                <div class="form-field">
+                    <label for="site-description">Site Description</label>
+                    <textarea id="site-description">An open-source database mapping the interconnections between academics across disciplines.</textarea>
+                </div>
+                <div class="form-field">
+                    <label for="api-settings">Gemini API Settings</label>
+                    <input type="password" id="admin-api-key" placeholder="API Key">
+                </div>
+                <button class="submit-btn" id="save-settings">Save Settings</button>
+            </div>
+        </section>
+
+        <section class="github-status-panel" id="github-status-panel" style="display: none;">
+            <div class="github-status-header">
+                <h3>GitHub Repository Status</h3>
+                <span class="close-panel" id="close-github-status">&times;</span>
+            </div>
+            <div class="github-status-content">
+                <div class="status-indicator">
+                    <span class="indicator-circle" id="github-indicator"></span>
+                    <span id="github-status-text">Not connected</span>
+                </div>
+                <div class="status-details" id="github-status-details">
+                    <!-- Details populated dynamically -->
+                </div>
+                <div class="github-auth-form" id="github-auth-form">
+                    <p>Connect with GitHub to enable contributions and database sync:</p>
+                    <button class="github-login-btn" id="github-login-btn">
+                        <svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align: middle; margin-right: 8px;">
+                            <path fill="currentColor" d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path>
+                        </svg>
+                        Log in with GitHub
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div>&copy; 2025 killphilosophy.com</div>
+        <div class="network-tag">Net.Academics.v0.1</div>
+        <div class="github-link">
+            <a href="https://github.com/username/killphilosophy.com" target="_blank" id="repo-link">
+                <svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align: middle;">
+                    <path fill="currentColor" d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path>
+                </svg>
+                View on GitHub
+            </a>
+        </div>
+    </footer>
+
+    <!-- Modal -->
+    <div class="modal" id="about-modal">
+        <div class="modal-content">
+            <span class="close-modal" id="close-about-modal">&times;</span>
+            <h2>About KillPhilosophy</h2>
+            <p>KillPhilosophy is an open-source database mapping the interconnections between academics across disciplines. Our aim is to create a comprehensive resource that reveals the networks of influence, collaboration, and critique that shape intellectual history.</p>
+            <p>The project takes its provocative name from the notion that philosophy—and academia broadly—thrives not in isolation but in connection. We "kill" the myth of the solitary thinker by exposing the rich tapestry of relationships that generate and transform ideas.</p>
+            <p>This platform allows users to search for academics, view their works and connections, and contribute to our growing database. All data is community-sourced and openly available.</p>
+            <h3>How to Use</h3>
+            <p>1. <strong>Search</strong> for an academic by name</p>
+            <p>2. View their <strong>technical brochure</strong> containing papers, events, and connections</p>
+            <p>3. <strong>Contribute</strong> by adding information about academics</p>
+            <p>4. <strong>Explore</strong> the network of connections between different thinkers</p>
+            
+            <h3>Open Source & Data Contribution</h3>
+            <p>KillPhilosophy is both the website you're viewing and the database that powers it. All data is stored in our GitHub repository and updates to the database are managed through GitHub's version control system.</p>
+            <p>When you contribute information, you're helping to build a living archive of academic connections that anyone can access, study, and expand.</p>
+            <p><a href="https://github.com/username/killphilosophy.com" target="_blank" id="about-repo-link">Visit our GitHub repository</a></p>
+        </div>
+    </div>
+
+    <!-- Contribution Modal -->
+    <div class="modal" id="contribution-modal">
+        <div class="modal-content">
+            <span class="close-modal" id="close-contribution-modal">&times;</span>
+            <h2>Contribution Submitted</h2>
+            <div id="contribution-result">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+    </div>
+
+    <script src="database.js"></script>
+    <script src="github-api.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
